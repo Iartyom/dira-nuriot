@@ -1,0 +1,56 @@
+# OS
+.DS_Store
+__MACOSX/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# IDEs
+.vscode/
+.idea/
+
+# Node
+node_modules/
+
+# Test/cache
+.pytest_cache/
+tmp/
+
+# Secrets and local credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+credentials.json
+secrets.json
+.secrets/
+
+# Personal browser/app state must stay out of a public repository
+user-state.json
+*-user-state.json
+
+# Build outputs
+dist/
+build/
+
+# Ignore user-specific files
+*.log
+
+# Private apartment source document
+dira-nuriot/128A5.pdf
+
+# Generated downloads, raw third-party pages, and historical snapshots
+dira-nuriot/updates/raw-*
+dira-nuriot/updates/deals-*.json
+dira-nuriot/updates/snapshots/
+dira-nuriot/updates/update-history.json
+dira-nuriot/updates/update-status.json

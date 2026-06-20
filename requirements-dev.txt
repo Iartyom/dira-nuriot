@@ -1,0 +1,4 @@
+pytest
+jsonschema
+requests
+flake8

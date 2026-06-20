@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Renovation plan (permissive)",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "kitchen_credit_nis": {"type": ["integer","number"]},
+    "professionals": {
+      "type": "array",
+      "items": {"type": "object"}
+    },
+    "options": {
+      "type": "array",
+      "items": {"type": "object"}
+    },
+    "prep_before_key": {"type": "array"}
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "_comment": "Editable management seeds. Runtime edits are stored in the browser and can be exported/imported as a versioned backup.",
+  "valuation_model": {
+    "base_value_nis": 3250000,
+    "base_label": "הערכת שוק ידנית 2026-06",
+    "adjustments": [
+      {"key": "new_build", "label": "פרמיית בנייה חדשה", "pct": 3, "reason": "דירה חדשה בפרויקט חדש"},
+      {"key": "balcony", "label": "מרפסת 13 מ״ר", "pct": 1, "reason": "שטח חוץ שימושי"},
+      {"key": "delivery", "label": "מסירה עתידית", "pct": -2, "reason": "אי-נזילות וסיכון עד מסירה"},
+      {"key": "boundary", "label": "אי-ודאות אזור סטטיסטי", "pct": -2, "reason": "Nadlan ממפה את נוריות למרום ראשון"}
+    ],
+    "scenarios": [
+      {"key": "conservative", "label": "שמרני", "multiplier": 0.95},
+      {"key": "base", "label": "בסיס", "multiplier": 1.0},
+      {"key": "optimistic", "label": "אופטימי", "multiplier": 1.05}
+    ]
+  },
+  "comparables": [
+    {
+      "date": "2026-06",
+      "address": "נוריות — קטגוריית 6 חדרים",
+      "rooms": 6,
+      "area_sqm": null,
+      "price_nis": 3565909,
+      "kind": "מדלן — אינדיקציית בנייה חדשה",
+      "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C",
+      "confidence": "בינונית",
+      "notes": "סיכום קטגוריה עדכני; לא מודעה בודדת ולא עסקה סגורה"
+    },
+    {
+      "date": "2025-03",
+      "address": "מרום ראשון — אזור סטטיסטי",
+      "rooms": null,
+      "area_sqm": null,
+      "price_nis": 3997300,
+      "kind": "סיכום ממשלתי — כל החדרים",
+      "source_url": "https://data.nadlan.gov.il/api/pages/neighborhood/buy/65209940.json",
+      "confidence": "נמוכה לנכס",
+      "notes": "נתון מצרפי, גבול ישן, לא בר-השוואה ישירה"
+    },
+    {
+      "date": "2026-06",
+      "address": "נרקיסים — קטגוריית 6 חדרים",
+      "rooms": 6,
+      "area_sqm": null,
+      "price_nis": 4003333,
+      "kind": "מדלן — שכונה חדשה להשוואה",
+      "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%A8%D7%A7%D7%99%D7%A1%D7%99%D7%9D-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C",
+      "confidence": "בינונית",
+      "notes": "שכונה סמוכה וחדשה; אינדיקציית קטגוריה ולא עסקה בודדת"
+    }
+  ],
+  "cash_flow": {
+    "available_cash_nis": 0,
+    "monthly_contribution_nis": 0,
+    "contingency_pct": 12,
+    "renovation_target_nis": 165000
+  },
+  "renovation_tracking": [],
+  "defects": []
+}

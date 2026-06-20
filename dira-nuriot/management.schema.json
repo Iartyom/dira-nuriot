@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Apartment management data",
+  "type": "object",
+  "required": ["valuation_model", "comparables", "cash_flow", "renovation_tracking", "defects"],
+  "additionalProperties": true,
+  "properties": {
+    "valuation_model": {
+      "type": "object",
+      "required": ["base_value_nis", "adjustments", "scenarios"],
+      "properties": {
+        "base_value_nis": {"type": "number", "minimum": 0},
+        "adjustments": {"type": "array", "items": {"type": "object", "required": ["key", "label", "pct"]}},
+        "scenarios": {"type": "array", "items": {"type": "object", "required": ["key", "label", "multiplier"]}}
+      }
+    },
+    "comparables": {"type": "array", "items": {"type": "object", "required": ["date", "address", "price_nis", "kind", "confidence"]}},
+    "cash_flow": {
+      "type": "object",
+      "required": ["available_cash_nis", "monthly_contribution_nis", "contingency_pct", "renovation_target_nis"],
+      "properties": {
+        "available_cash_nis": {"type": "number"},
+        "monthly_contribution_nis": {"type": "number"},
+        "contingency_pct": {"type": "number", "minimum": 0},
+        "renovation_target_nis": {"type": "number", "minimum": 0}
+      }
+    },
+    "renovation_tracking": {"type": "array", "items": {"type": "object"}},
+    "defects": {"type": "array", "items": {"type": "object"}}
+  }
+}

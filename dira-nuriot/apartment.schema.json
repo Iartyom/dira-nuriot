@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Apartment data (permissive)",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "project": {"type": "object"},
+    "unit": {
+      "type": "object",
+      "properties": {
+        "rooms": {"type": "integer"},
+        "area_sqm": {"type": "number"}
+      }
+    },
+    "purchase": {
+      "type": "object",
+      "properties": {
+        "price_nis": {"type": ["integer","number"]},
+        "contract_signed": {"type": "string"}
+      }
+    },
+    "valuation": {"type": "object"},
+    "market_trend": {"type": "object"}
+  }
+}

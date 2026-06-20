@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ניהול שיפוץ — דירת נוריות</title>
+<style>
+:root { --bg:#0b1120; --card:#16213a; --card2:#1b2748; --ink:#e6edf6; --muted:#8da2bd;
+        --accent:#38bdf8; --gold:#fbbf24; --green:#22c55e; --red:#f87171; --line:#2a3a5c; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:-apple-system,"Segoe UI",Rubik,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.65; }
+.wrap { max-width:1080px; margin:0 auto; padding:20px 16px 80px; }
+header { display:flex; gap:20px; align-items:center; flex-wrap:wrap; padding:18px 0; border-bottom:1px solid var(--line); }
+header .info h1 { margin:0; font-size:26px; }
+header .info .meta { color:var(--muted); margin-top:4px; font-size:14px; }
+.photo { flex:0 0 220px; height:150px; border-radius:14px; overflow:hidden; border:1px solid var(--line); }
+.photo img { width:100%; height:100%; object-fit:cover; }
+.photo.placeholder { display:flex; align-items:center; justify-content:center; text-align:center; color:var(--muted); background:var(--card); font-size:13px; padding:10px; }
+.grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); margin:18px 0; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+.card h3 { font-size:12px; color:var(--accent); margin:0 0 8px; text-transform:uppercase; letter-spacing:.5px; }
+.big { font-size:24px; font-weight:800; }
+.sub { color:var(--muted); font-size:12.5px; margin-top:4px; }
+section { margin-top:32px; }
+section > h2 { border-right:3px solid var(--accent); padding-right:10px; font-size:20px; }
+table { width:100%; border-collapse:collapse; }
+td,th { text-align:right; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+th { color:var(--accent); font-size:12px; }
+.note { color:var(--muted); font-size:12px; font-weight:400; margin-top:2px; }
+.num { white-space:nowrap; color:var(--muted); }
+input.price { width:110px; background:var(--bg); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:6px 9px; font-size:14px; }
+.foot { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-top:14px; padding:14px 18px; background:var(--card2); border-radius:12px; }
+.foot .big2 { font-size:20px; font-weight:800; color:var(--gold); }
+.week { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:6px 18px 14px; margin-bottom:12px; }
+.week-head { display:flex; gap:10px; align-items:center; padding:12px 0 8px; border-bottom:1px dashed var(--line); flex-wrap:wrap; }
+.wk { background:var(--accent); color:#04293b; font-weight:800; border-radius:8px; padding:3px 10px; font-size:13px; }
+.wk-title { font-weight:700; }
+.trade { margin-inline-start:auto; color:var(--muted); font-size:11.5px; border:1px solid var(--line); border-radius:20px; padding:2px 10px; }
+ul.tasks { list-style:none; margin:8px 0 0; padding:0; }
+ul.tasks li { padding:6px 0; }
+ul.tasks label { display:flex; gap:9px; align-items:flex-start; cursor:pointer; }
+ul.tasks .days { color:var(--gold); font-size:12px; font-weight:700; white-space:nowrap; margin-top:2px; }
+input[type=checkbox] { width:18px; height:18px; margin-top:3px; accent-color:var(--green); flex:0 0 auto; cursor:pointer; }
+.done > label, label.done { opacity:.5; text-decoration:line-through; }
+ul.flat { list-style:none; margin:0; padding:0; }
+ul.flat li { display:flex; gap:10px; align-items:center; padding:10px; border-bottom:1px solid var(--line); }
+ul.flat label { display:flex; gap:9px; align-items:center; cursor:pointer; flex:1; }
+ul.flat .pri { font-size:12px; color:var(--muted); white-space:nowrap; }
+.opt { display:grid; grid-template-columns:24px 1fr auto auto; gap:10px; align-items:start; padding:11px 0; border-bottom:1px solid var(--line); }
+.opt .name { font-weight:600; }
+.opt .ess { font-size:10.5px; color:#04293b; background:var(--gold); border-radius:6px; padding:1px 6px; margin-inline-start:6px; }
+.vb { font-size:10.5px; border-radius:6px; padding:1px 7px; margin-inline-start:6px; font-weight:700; }
+.vb-h { background:#16a34a; color:#fff; }
+.vb-m { background:#1b2748; color:#7dd3fc; border:1px solid #38bdf8; }
+.opt .rng { color:var(--muted); font-size:12px; white-space:nowrap; align-self:center; }
+.diyline { margin-top:6px; padding-top:6px; border-top:1px dashed var(--line); display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.diychk { display:inline-flex; align-items:center; gap:6px; cursor:pointer; background:#06281f; border:1px solid #22c55e; color:#bbf7d0; padding:2px 10px; border-radius:20px; font-size:12.5px; }
+.diychk input { margin:0; width:15px; height:15px; }
+.prodprice { font-size:12px; color:var(--gold); }
+.addbtn { margin-top:10px; background:var(--accent); color:#04293b; border:0; border-radius:8px; padding:8px 16px; font-weight:700; cursor:pointer; font-size:14px; }
+.addbtn:hover { opacity:.9; }
+table input.cell { width:100%; background:var(--bg); border:1px solid var(--line); color:var(--ink); border-radius:6px; padding:6px 8px; font-size:13px; }
+.delbtn { background:none; border:0; color:var(--red); cursor:pointer; font-size:16px; }
+.vtrend { font-size:15px; margin-bottom:10px; font-weight:700; }
+.vchart { display:flex; align-items:flex-end; gap:16px; height:200px; padding:30px 0 0; }
+.vbar { flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; }
+.vbar-fill { width:70%; max-width:90px; background:linear-gradient(180deg,#38bdf8,#16a34a); border-radius:8px 8px 0 0; min-height:4px; position:relative; display:flex; justify-content:center; }
+.vbar-amt { position:absolute; top:-24px; font-size:15px; font-weight:800; color:var(--gold); white-space:nowrap; }
+.vbar-lbl { font-size:12px; color:var(--muted); margin-top:7px; text-align:center; }
+.vbar-lbl b { color:var(--ink); display:block; }
+.area-cell { color:var(--gold); font-weight:700; white-space:nowrap; }
+.szt { font-size:10px; font-weight:700; border-radius:6px; padding:1px 7px; margin-inline-start:5px; }
+.szt-s { background:#7f1d1d; color:#fecaca; }
+.szt-m { background:#1b2748; color:#7dd3fc; border:1px solid #38bdf8; }
+.szt-l { background:#14532d; color:#bbf7d0; }
+.tglegend { font-size:12.5px; color:var(--muted); margin-bottom:8px; }
+.tg-k { display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:middle; margin-inline-start:4px; }
+.tgwrap { display:flex; align-items:flex-end; gap:10px; height:170px; padding:24px 0 0; border-bottom:1px solid var(--line); }
+.tg { flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; }
+.tg-bars { display:flex; gap:3px; align-items:flex-end; height:100%; width:100%; justify-content:center; }
+.tg-b { width:42%; max-width:26px; border-radius:4px 4px 0 0; min-height:4px; position:relative; }
+.tg-b span { position:absolute; top:-17px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--muted); }
+.tg-area { background:#38bdf8; }
+.tg-nat { background:#64748b; }
+.tg-yr { font-size:11px; color:var(--muted); margin-top:6px; }
+.toolbar { display:flex; gap:8px; margin:14px 0 0; }
+.toolbar { flex-wrap:wrap; }
+.badge { display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:3px 9px; font-size:11px; font-weight:700; border:1px solid var(--line); }
+.badge-ok { color:#bbf7d0; background:#06281f; border-color:#166534; }
+.badge-warn { color:#fde68a; background:#3b1f06; border-color:#b45309; }
+.badge-bad { color:#fecaca; background:#3f1117; border-color:#991b1b; }
+.badge-info { color:#bae6fd; background:#082f49; border-color:#0369a1; }
+.health-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; }
+.health-item { background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:12px; }
+.health-item b { display:block; margin-bottom:3px; }
+.metric-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+.metric { flex:1 1 150px; background:var(--card2); border-radius:10px; padding:12px; }
+.metric strong { display:block; font-size:19px; color:var(--gold); }
+.scroll { overflow-x:auto; }
+.scenario-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-top:12px; }
+.scenario { background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:12px; text-align:center; }
+.scenario strong { display:block; color:var(--gold); font-size:20px; }
+.field-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
+.field-grid label { color:var(--muted); font-size:12px; }
+.field-grid input { display:block; width:100%; margin-top:4px; }
+.status-line { display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px dashed var(--line); }
+.status-line:last-child { border-bottom:0; }
+.filebtn { position:relative; overflow:hidden; display:inline-block; }
+.filebtn input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.toast { min-height:20px; color:var(--muted); font-size:12px; margin-top:6px; }
+@media (max-width:700px){ td,th{padding:7px 6px;font-size:12px} input.price{width:90px}.wrap{padding-inline:10px}.card{padding:13px} }
+section > h2 { cursor:pointer; user-select:none; }
+section > h2:hover { color:var(--accent); }
+.toggle-ind { display:inline-block; width:1.1em; color:var(--accent); font-size:14px; }
+.progress { height:8px; background:var(--bg); border-radius:20px; overflow:hidden; margin:6px 0 0; }
+.progress > i { display:block; height:100%; background:var(--green); width:0; transition:width .3s; }
+.warn { background:#3b1f06; border:1px solid #b45309; color:#fde68a; border-radius:10px; padding:12px 16px; font-size:14px; margin-top:10px; }
+.pillrow { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.pill { font-size:12.5px; background:var(--card2); border:1px solid var(--line); padding:4px 11px; border-radius:20px; }
+.restr div, .nb div { padding:6px 0; border-bottom:1px dashed var(--line); font-size:13.5px; }
+.restr b, .nb b { color:var(--accent); }
+.src { margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
+.src a { font-size:12px; color:var(--accent); background:var(--card2); padding:4px 10px; border-radius:20px; text-decoration:none; }
+.tier { border-inline-start:3px solid var(--gold); padding:4px 14px; margin:12px 0; background:var(--card2); border-radius:0 12px 12px 0; }
+.tier h4 { margin:6px 0 4px; }
+.tier .price { color:var(--gold); font-weight:700; }
+.paid-yes { color:var(--green); }
+.paid-no { color:var(--muted); }
+.next { background:#06281f; border:1px solid var(--green); border-radius:10px; padding:10px 14px; margin-top:10px; font-size:14px; }
+code { background:#04293b; padding:2px 6px; border-radius:6px; }
+footer { text-align:center; color:var(--muted); font-size:12px; margin-top:40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="photo"><img src="photo.jpg" alt="הדירה"></div>
+    <div class="info">
+      <h1>🏠 ניהול שיפוץ — דירת נוריות</h1>
+      <div class="meta">6 חדרים · 145 מ"ר + מרפסת 13 מ"ר · נוריות, ראשון לציון · פרויקט עופר אהרון · מחיר למשתכן · מסירה ~רבעון 3 2028 (תשלום אחרון 30/09/28)</div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <button class="addbtn" id="expand-all">⊕ פתח הכל</button>
+    <button class="addbtn" id="collapse-all" style="background:var(--card2);color:var(--ink)">⊖ כווץ הכל</button>
+    <button class="addbtn" id="export-state" style="background:var(--green);color:#052e1a">⬇ גיבוי נתונים</button>
+    <label class="addbtn filebtn" style="background:var(--card2);color:var(--ink)">⬆ שחזור גיבוי<input type="file" id="import-state" accept="application/json"></label>
+  </div>
+  <div class="toast" id="backup-msg">עריכות נשמרות מקומית. מומלץ לייצא גיבוי לאחר שינוי משמעותי.</div>
+
+  <section>
+    <h2>🩺 מצב מערכת ונתונים</h2>
+    <div class="health-grid">
+      <div class="health-item"><b>מקור שוק</b><span class="badge badge-ok">זמין</span><div class="note">Nadlan + GovMap</div></div>
+      <div class="health-item"><b>גרסת נתונים</b><span class="badge badge-warn">28-07-2025</span><div class="note">גיל: 327 ימים</div></div>
+      <div class="health-item"><b>התאמת גבול</b><span class="badge badge-warn">פער — נוריות/מרום ראשון</span><div class="note">אזור 65209940</div></div>
+      <div class="health-item"><b>עדכון אחרון</b><span class="badge badge-ok">תקין</span><div class="note">2026-06-20 07:20:03</div></div>
+      <div class="health-item"><b>Madlan</b><span class="badge badge-ok">נסרק</span><div class="note">אינדיקציות שוק, לא עסקאות ממשלתיות</div></div>
+      <div class="health-item"><b>Yad2</b><span class="badge badge-warn">לא זמין לאוטומציה</span><div class="note">הגנת anti-bot; החבילה שנבדקה ממוקדת רכב</div></div>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>שלבי הריצה האחרונה</h3><div class="status-line"><span>fetch</span><span class="badge badge-ok">תקין · 3.44s</span></div><div class="status-line"><span>validate</span><span class="badge badge-ok">תקין · 0.41s</span></div><div class="status-line"><span>snapshot</span><span class="badge badge-ok">תקין · 0s</span></div><div class="status-line"><span>build</span><span class="badge badge-ok">תקין · 0.23s</span></div></div>
+      <div class="card scroll"><h3>היסטוריית עדכונים</h3><table><tr><th>מועד</th><th>מצב</th><th>שלבים</th></tr><tr><td>2026-06-20 07:20:03</td><td><span class="badge badge-ok">תקין</span></td><td>fetch, validate, snapshot, build</td></tr><tr><td>2026-06-20 05:46:52</td><td><span class="badge badge-ok">תקין</span></td><td>fetch, validate, snapshot, build</td></tr><tr><td>2026-06-19 19:26:13</td><td><span class="badge badge-ok">תקין</span></td><td>fetch, validate, snapshot, build</td></tr><tr><td>2026-06-19 18:56:00</td><td><span class="badge badge-ok">תקין</span></td><td>fetch, validate, snapshot, build</td></tr><tr><td>2026-06-19 18:55:09</td><td><span class="badge badge-ok">תקין</span></td><td>fetch, validate, snapshot, build</td></tr></table></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>🏙️ נתוני שוק רשמיים</h2>
+    <div class="warn">הנתון הרשמי הוא סיכום לכל גדלי הדירות באזור הסטטיסטי הישן “מרום ראשון”. התצפית האחרונה היא מ־03/2025 ואין בקובץ מחיר שכונתי מאוחר יותר; לכן היא היסטורית בלבד ואינה שווי נוכחי לדירת 6 חדרים בנוריות.</div>
+    <div class="metric-row">
+        <div class="metric"><span>תצפית ממשלתית אחרונה — ישנה</span><strong>3,997,300 ₪</strong><span class="note">3/2025 · כל החדרים · אין תצפית מאוחרת יותר</span></div>
+      <div class="metric"><span>ממוצע שנה — כל החדרים</span><strong>3,911,750 ₪</strong><span class="note">שינוי 1.55%</span></div>
+      <div class="metric"><span>ממוצע שנה — 5 חדרים</span><strong>—</strong><span class="note">קטגוריה קרובה, לא זהה</span></div>
+    </div>
+    <div class="src"><a href="https://data.nadlan.gov.il/api/pages/neighborhood/buy/65209940.json" target="_blank">מקור ממשלתי ↗</a></div>
+    <div class="card" style="margin-top:12px">
+      <h3>Madlan — אינדיקציות עדכניות לנוריות (מקור עיקרי לעדכניות)</h3>
+      <div class="metric-row">
+        <div class="metric"><span>6 חדרים — בנייה חדשה</span><strong>3,565,909 ₪</strong><span class="note">סיכום קטגוריה, לא עסקה בודדת</span></div>
+        <div class="metric"><span>6 חדרים — יד שנייה</span><strong>3,637,143 ₪</strong><span class="note">סיכום קטגוריה</span></div>
+        <div class="metric"><span>ממוצע עסקאות למ״ר</span><strong>21,468 ₪</strong><span class="note">197 עסקאות בסיכום</span></div>
+        <div class="metric"><span>עסקאות בשנה</span><strong>48</strong><span class="note">מודעות פעילות למכירה: 3</span></div>
+      </div>
+      <div class="sub">עודכן במקור: None · מקור משלים מסחרי; אין לערבב עם עסקאות ממשלתיות ללא תיוג.</div>
+      <div class="src"><a href="https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C" target="_blank">Madlan נוריות ↗</a></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>השוואת שכונה חדשה סמוכה — נרקיסים</h3>
+      <div class="metric-row">
+        <div class="metric"><span>6 חדרים — בנייה חדשה</span><strong>4,003,333 ₪</strong><span class="note">פער מול נוריות: +12.3%</span></div>
+        <div class="metric"><span>ממוצע עסקאות למ״ר</span><strong>26,517 ₪</strong><span class="note">מקור Madlan</span></div>
+        <div class="metric"><span>עסקאות בשנה</span><strong>107</strong><span class="note">מול 48 בנוריות</span></div>
+        <div class="metric"><span>מודעות פעילות למכירה</span><strong>53</strong><span class="note">מדד עומק היצע</span></div>
+      </div>
+      <div class="warn">נרקיסים מתאימה כבנצ׳מרק לשכונה חדשה סמוכה, אך אינה נכס זהה: יש הבדלים בבשלות השכונה, מלאי, מיקום פנימי, קומה, מפרט ומועד מסירה.</div>
+      <div class="warn" style="background:#3b1f06;border-color:#b45309">מקור ממשלתי: נרקיסים ממופה לאזור הישן “צמרות” (65209882), גרסה 28-07-2025. קיימת אינדיקציית עסקאות, אך מחירי השכונה הפומביים ריקים—לכן הם אינם נכנסים לחישוב.</div>
+      <div class="src"><a href="https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%A8%D7%A7%D7%99%D7%A1%D7%99%D7%9D-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C" target="_blank">Madlan נרקיסים ↗</a></div>
+      <div class="src"><a href="https://data.nadlan.gov.il/api/pages/neighborhood/buy/65209882.json" target="_blank">Nadlan ממשלתי — מיפוי נרקיסים ↗</a></div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <div class="card"><h3>מחיר רכישה</h3><div class="big">2,450,000 ₪</div><div class="sub">חוזה 2025-12-07 · ~16,897 ₪/מ"ר · מטבח לא כלול</div></div>
+    <div class="card"><h3>שווי שוק מוערך</h3><div class="big">3,250,000 ₪</div><div class="sub">טווח 3,100,000 ₪–3,400,000 ₪ · ביטחון בינונית</div></div>
+    <div class="card"><h3>רווח על הנייר</h3><div class="big" style="color:#22c55e">+800,000 ₪ <span style="font-size:15px">(+33%)</span></div><div class="sub">מול המחיר ששולם · עודכן 2026-06-02</div></div>
+  </div>
+
+  <section>
+    <h2>💳 לוח תשלומים (חוזה)</h2>
+    <div class="next" id="next-payment"></div>
+    <div class="card" style="margin-top:10px">
+      <table>
+        <tr><th>תאריך</th><th>סכום (כולל מע"מ)</th><th>סטטוס</th><th>שולם?</th></tr>
+        <tr><td>2025-12-07</td><td class="num amt-cell" data-base="169798.09">169,798 ₪ </td><td class="paid-cell"></td><td><input type="checkbox" class="paychk" data-date="2025-12-07" data-amt="169798.09" data-indexed="0" checked></td></tr><tr><td>2026-01-18</td><td class="num amt-cell" data-base="315339.31">315,339 ₪ </td><td class="paid-cell"></td><td><input type="checkbox" class="paychk" data-date="2026-01-18" data-amt="315339.31" data-indexed="0" checked></td></tr><tr><td>2026-06-07</td><td class="num amt-cell" data-base="242568.7">242,569 ₪ 🔗</td><td class="paid-cell"></td><td><input type="checkbox" class="paychk" data-date="2026-06-07" data-amt="242568.7" data-indexed="1" ></td></tr><tr><td>2026-10-07</td><td class="num amt-cell" data-base="242568.7">242,569 ₪ 🔗</td><td class="paid-cell"></td><td><input type="checkbox" class="paychk" data-date="2026-10-07" data-amt="242568.7" data-indexed="1" ></td></tr><tr><td>2027-02-07</td><td class="num amt-cell" data-base="242568.7">242,569 ₪ 🔗</td><td class="paid-cell"></td><td><input type="checkbox" class="paychk" data-date="2027-02-07" data-amt="242568.7" data-indexed="1" ></td></tr><tr><td>2027-06-07</td><td class="num amt-cell" data-base="242568.7">242,569 ₪ 🔗</td><td class="paid-cell"></td><td><input type="checkbox" class="paychk" data-date="2027-06-07" data-amt="242568.7" data-indexed="1" ></td></tr><tr><td>2027-10-07</td><td class="num amt-cell" data-base="242568.7">242,569 ₪ 🔗</td><td class="paid-cell"></td><td><input type="checkbox" class="paychk" data-date="2027-10-07" data-amt="242568.7" data-indexed="1" ></td></tr><tr><td>2028-02-07</td><td class="num amt-cell" data-base="242568.7">242,569 ₪ 🔗</td><td class="paid-cell"></td><td><input type="checkbox" class="paychk" data-date="2028-02-07" data-amt="242568.7" data-indexed="1" ></td></tr><tr><td>2028-06-07</td><td class="num amt-cell" data-base="242568.7">242,569 ₪ 🔗</td><td class="paid-cell"></td><td><input type="checkbox" class="paychk" data-date="2028-06-07" data-amt="242568.7" data-indexed="1" ></td></tr><tr><td>2028-09-30</td><td class="num amt-cell" data-base="242568.7">242,569 ₪ 🔗</td><td class="paid-cell"></td><td><input type="checkbox" class="paychk" data-date="2028-09-30" data-amt="242568.7" data-indexed="1" ></td></tr>
+      </table>
+      <div class="sub" style="margin-top:8px">🔗 = צמוד למדד תשומות הבנייה. תשלומים מ-07/06/26 ואילך צמודים למדד תשומות הבנייה (מדד בסיס 139.3935) — הסכומים יעודכנו כלפי מעלה עם המדד.</div>
+      <div class="diyline" style="margin-top:10px">
+        <label class="diychk" style="background:#1b2748;border-color:#38bdf8;color:#bae6fd">📊 מדד תשומות נוכחי
+          <input type="number" step="0.01" id="index-input" style="width:90px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:3px 6px" placeholder="139.3935"></label>
+        <span class="prodprice" style="color:#bae6fd">מדד בסיס: 139.3935 · תוספת מדד על הצמודים: <b id="index-extra">0 ₪</b></span>
+      </div>
+    </div>
+    <div class="foot">
+      <div>שולם עד כה: <b id="paid-total">—</b></div>
+      <div>נותר לשלם (לפי מדד): <b id="remaining-total">—</b></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>💰 תחזית תזרים ומימון עד מסירה</h2>
+    <div class="card">
+      <div class="field-grid">
+        <label>מזומן זמין<input class="cell" id="cash-available_cash_nis" type="number"></label>
+        <label>הפקדה חודשית<input class="cell" id="cash-monthly_contribution_nis" type="number"></label>
+        <label>יעד שיפוץ<input class="cell" id="cash-renovation_target_nis" type="number"></label>
+        <label>רזרבה (%)<input class="cell" id="cash-contingency_pct" type="number" step="0.1"></label>
+      </div>
+      <div class="metric-row">
+        <div class="metric"><span>תשלומי חוזה שנותרו</span><strong id="cash-remaining">—</strong></div>
+        <div class="metric"><span>צורך כולל + רזרבה</span><strong id="cash-required">—</strong></div>
+        <div class="metric"><span>חודשים עד תשלום אחרון</span><strong id="cash-months">—</strong></div>
+        <div class="metric"><span>חיסכון צפוי</span><strong id="cash-projected">—</strong></div>
+        <div class="metric"><span>חיסכון חודשי נדרש</span><strong id="cash-monthly-needed">—</strong></div>
+        <div class="metric"><span>פער נוכחי</span><strong id="cash-gap">—</strong><div id="cash-status"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>📈 הערכת שווי, מגמה ומעקב</h2>
+    <div class="card">
+      <h3>מודל שווי שקוף</h3>
+      <div class="field-grid"><label>שווי בסיס<input class="cell" id="valuation-base" type="number"></label></div>
+      <div id="valuation-adjustments" style="margin-top:10px"></div>
+      <div class="foot"><div>סך התאמות: <b id="valuation-total-pct">—</b></div><div>שווי מתואם: <span class="big2" id="valuation-adjusted">—</span></div></div>
+      <div class="scenario-grid" id="valuation-scenarios"></div>
+    </div>
+    <div class="card scroll" style="margin-top:12px">
+      <h3>נכסים להשוואה — סוג המקור תמיד גלוי</h3>
+      <div class="metric-row"><div class="metric"><span>השוואות עם מחיר+שטח</span><strong id="comp-count">0</strong></div><div class="metric"><span>ממוצע גולמי</span><strong id="comp-avg">—</strong></div></div>
+      <table id="comparables-table"><tr><th>תאריך</th><th>כתובת</th><th>חדרים</th><th>מ״ר</th><th>מחיר</th><th>₪/מ״ר</th><th>סוג</th><th>ביטחון</th><th>מקור</th><th></th></tr></table>
+      <button class="addbtn" id="add-comp">+ הוסף השוואה</button>
+    </div>
+    <div class="card">
+      <div id="value-trend" class="vtrend"></div>
+      <div id="value-chart"></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>📉 מגמת מחירים — ראשל"צ/נוריות מול ארצי</h3>
+      <div class="tglegend"><span class="tg-k tg-area"></span> ראשל"צ/נוריות <span class="tg-k tg-nat"></span> ארצי <span class="sub">(מדד 2021=100)</span></div><div class="tgwrap"><div class="tg"><div class="tg-bars"><div class="tg-b tg-area" style="height:37%"><span>100</span></div><div class="tg-b tg-nat" style="height:37%"><span>100</span></div></div><div class="tg-yr">2021</div></div><div class="tg"><div class="tg-bars"><div class="tg-b tg-area" style="height:83%"><span>119</span></div><div class="tg-b tg-nat" style="height:81%"><span>118</span></div></div><div class="tg-yr">2022</div></div><div class="tg"><div class="tg-bars"><div class="tg-b tg-area" style="height:78%"><span>117</span></div><div class="tg-b tg-nat" style="height:76%"><span>116</span></div></div><div class="tg-yr">2023</div></div><div class="tg"><div class="tg-bars"><div class="tg-b tg-area" style="height:90%"><span>122</span></div><div class="tg-b tg-nat" style="height:88%"><span>121</span></div></div><div class="tg-yr">2024</div></div><div class="tg"><div class="tg-bars"><div class="tg-b tg-area" style="height:100%"><span>126</span></div><div class="tg-b tg-nat" style="height:95%"><span>124</span></div></div><div class="tg-yr">2025</div></div><div class="tg"><div class="tg-bars"><div class="tg-b tg-area" style="height:100%"><span>126</span></div><div class="tg-b tg-nat" style="height:95%"><span>124</span></div></div><div class="tg-yr">2026</div></div></div><div class="sub" style="margin-top:8px">2022 — זינוק חד (~+18%); 2023 — התקררות קלה; 2024–2025 — עליות מתונות (~3% לשנה); 2026 — יציבות/ירידה קלה. ראשל"צ מעט חזקה מהארצי בזכות תנופת הבנייה במערב.</div><div class="src"><a href="https://www.cbs.gov.il/he/subjects/Pages/%D7%9E%D7%93%D7%93-%D7%9E%D7%97%D7%99%D7%A8%D7%99-%D7%93%D7%99%D7%A8%D7%95%D7%AA.aspx" target="_blank">מדד מחירי דירות — למ"ס ↗</a></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <p style="margin-top:0">התקררות קלה ארצית ב-2025–2026 (ירידת אחוזים בודדים + ירידה בהיקף עסקאות), אך מערב/דרום ראשל"צ בתנופת בנייה חזקה — תמיכה במחיר לטווח בינוני-ארוך.</p>
+      <div class="sub"><b>השוואות:</b> 6 חד' שוק חופשי, מגדלי נוריות (אותו יזם/שכונה): החל מ-~3,321,000 ₪ (מחיר ביקוש) · דירה חדשה 3 חד' בראשל"צ: 2.25–2.75 מ' ₪ (2026)</div>
+      <div class="src"><a href="https://oaharon.co.il/projects/%D7%9E%D7%92%D7%93%D7%9C%D7%99-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA" target="_blank">מגדלי נוריות — ע. אהרון ↗</a><a href="https://www.nadlanmaster.co.il/real-estate-prices/" target="_blank">מחירי נדל"ן בישראל 2026 — נדלן מאסטר ↗</a></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="sub" style="margin-bottom:6px">הערכות שווי לאורך זמן (נשמר בדפדפן):</div>
+      <table id="value-table">
+        <tr><th>תאריך</th><th>שווי (₪)</th><th>הערה</th><th></th></tr>
+      </table>
+      <button class="addbtn" id="add-value">+ הוסף הערכה</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>📐 מידות חדרים</h2>
+    <div class="sub">אורך×רוחב לכל חדר (שטח מחושב). שלח תוכנית מכר ואמלא אוטומטית. נשמר בדפדפן.</div>
+    <div class="card" style="margin-top:10px">
+      <table id="rooms-table">
+        <tr><th>חדר</th><th>אורך (מ')</th><th>רוחב (מ')</th><th>שטח (מ"ר)</th><th></th></tr>
+      </table>
+      <button class="addbtn" id="add-room">+ הוסף חדר</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>📐 מה כלול מהקבלן (מתוך המפרט)</h2>
+    <div class="card nb">
+      <div><b>פריסה:</b> חדר דיור + פינת אוכל, מטבח, חדר שינה הורים, 2 חדרי שינה, ממ"ד (משמש כחדר שינה), פרוזדור, מרפסת שירות, מרפסת שמש.</div>
+      <div><b>קומה:</b> 2 (מתוך 13) · בניין 1 · דירה 5 · גובה תקרה 2.5 מ'</div>
+      <div class="pillrow" style="margin:8px 0"><span class="pill">🚿 חדר רחצה הורים (מקלחת, צמוד)</span><span class="pill">🚿 חדר רחצה כללי (אמבטיה/אמבט)</span><span class="pill">🚿 בית שימוש נפרד (שירותי אורחים, ללא חלון — אוורור מכני)</span></div>
+      <div><b>🍳 מטבח:</b> הקבלן מספק ארון תחתון 6 מ' + משטח קיסר + הכנות (גז/חשמל/מדיח/כיור). לקחנו זיכוי של 10,000 ₪ (נספח ג') ונספק מטבח עצמאית.</div>
+      <div><b>❄️ מיזוג:</b> מסופקת הכנה בלבד למיני-מרכזי/מפוצל (צנרת/ניקוז/כבלים, מעבה במרפסת שירות). היחידות אינן כלולות. לשליטת טמפרטורה לכל חדר: מיני-מרכזי+מערכת זונים או מולטי-ספליט (מיני-מרכזי רגיל = אזור/טמפ' אחת).</div>
+      <div><b>🚽 סניטריה:</b> כלולים מהקבלן: אסלה (מונובלוק דו-כמותי 6/3 ל'), כיורי רחצה+מטבח, ברזי פרח מיקס (ברז מטבח נשלף), גז למטבח, דוד. החלפה = שדרוג אופציונלי.</div>
+      <div><b>🧱 ריצוף/דלתות:</b> ריצוף גרניט פורצלן 60/60 לפטו בכל הדירה + קרמיקה/פורצלן בחדרים רטובים — בחירתכם (מסופק). דלת כניסה פלדה 90/210, דלתות פנים עץ 80/210.</div>
+      <div class="warn" style="margin-top:10px">🛡️ <b>ממ"ד:</b> קירות הממ"ד בטון מזוין לפי הג"א — אסור לגעת/לקדוח/להזיז. בדיקת הזזת קיר חייבת לוודא שאינו גובל בממ"ד.</div>
+      <div class="sub" style="margin-top:8px">🧩 מחיצות פנים: בטון/בלוק בטון/איטונג/גבס. מחיצה שאינה נושאת ניתנת להזזה (עם אישור מהנדס). קירות חדרים רטובים מבלוק עמיד מים.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>🛠️ אפשרויות שיפוץ — בחר מה לבצע</h2>
+    <div class="sub">דירה חדשה ממחיר למשתכן. לקחנו זיכוי מטבח 10,000 ₪ ונספק מטבח עצמאית. אין שינויי דיירים. הקבלן לא מבצע שיפוץ — כל העבודות ע"י אנשי מקצוע שאנחנו מביאים אחרי קבלת המפתח.</div>
+    <div class="warn">⚠️ הזזת קיר מותנית: רק אם הקיר אינו נושא/ממ"ד. הקבלן לא מבצע דבר — כל איש מקצוע עצמאי.</div>
+    <div class="warn" style="background:#06281f;border-color:#22c55e;color:#bbf7d0">🔧 פריט עם <b>לבד</b> = ניתן להתקנה עצמית (יש לך ידיים טובות). סמן "לבד" כדי לשלם רק על המוצר. 🛒 = מחיר בארץ · 📦 = עלי אקספרס (זול בהרבה; מכס: עד $75 פטור, מעל — 17% מע"מ בלבד).</div>
+    <div class="warn" style="background:#052e1a;border-color:#16a34a;color:#bbf7d0"><span class="vb vb-h">📈 מעלה ערך</span> = משדרג משמעותית את שווי הדירה למכירה (מטבח, אמבטיות, מיזוג). <span class="vb vb-m">📈 ערך בינוני</span> = תורם. ללא תגית = בעיקר נוחות/אסתטיקה, החזר נמוך במכירה. 💡 בדירה חדשה כדאי למקד תקציב בפריטי "מעלה ערך" ולא להגזים בהתאמה אישית (לא תמיד מחזירה את עלותה).</div>
+    <div class="card" style="margin-top:12px">
+      <div id="options-list"></div>
+      <div class="src"><a href="https://www.kav-eichut.co.il/blog/cost-renovation-israel/" target="_blank">מחירון שיפוצים 2026 — קו איכות ↗</a><a href="https://dyel.co.il/blog/complete-guide-apartment-renovation-2026/" target="_blank">מדריך שיפוץ דירה 2026 — ד.י.א.ל ↗</a><a href="https://www.pro.co.il/general-contractors/guide/stages-in-apartment-renovation" target="_blank">שלבי שיפוץ — pro.co.il ↗</a></div>
+    </div>
+    <div class="foot">
+      <div>טווח שוק (נבחרו): <b id="budget-range">—</b></div>
+      <div>זיכוי קבלן (מטבח): <b style="color:#22c55e">−10,000 ₪</b></div>
+      <div>תקציב מתוכנן (נטו): <span class="big2" id="budget-planned">—</span></div>
+      <div>💰 חיסכון DIY: <b id="budget-savings" style="color:#22c55e">—</b></div>
+      <div>לו"ז מוערך: <b id="timeline-days">—</b></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>👷 אנשי מקצוע נדרשים (לפי הבחירה)</h3>
+      <div class="pillrow" id="pros-needed"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>✅ משימות לביצוע (מתעדכן לפי האפשרויות)</h2>
+    <div class="card" style="margin-bottom:12px">
+      <div>התקדמות: <span id="task-pct">0%</span></div>
+      <div class="progress"><i id="task-bar"></i></div>
+    </div>
+    <div class="card"><ul class="tasks" id="task-list"></ul></div>
+  </section>
+
+  <section>
+    <h2>📊 תקציב שיפוץ בפועל</h2>
+    <div class="metric-row"><div class="metric"><span>תקציב</span><strong id="reno-budget-total">—</strong></div><div class="metric"><span>התחייבויות/הצעות</span><strong id="reno-committed-total">—</strong></div><div class="metric"><span>שולם</span><strong id="reno-paid-total">—</strong></div><div class="metric"><span>סטייה</span><strong id="reno-variance-total">—</strong></div></div>
+    <div class="card scroll"><table id="reno-track-table"><tr><th>פריט</th><th>תקציב</th><th>הצעה/סופי</th><th>ספק</th><th>מקדמה</th><th>שולם</th><th>סטטוס</th><th>סטייה</th><th></th></tr></table><button class="addbtn" id="add-reno-track">+ הוסף פריט</button></div>
+  </section>
+
+  
+  <section>
+    <h2>🚀 תוכנית ביצוע מהירה + מה לפני מפתח</h2>
+    <div class="warn" style="background:#06281f;border-color:#22c55e;color:#bbf7d0">⚡ המפתח לקיצור הזמן: להזמין מראש (עוד לפני קבלת המפתח) את כל מה שיש לו זמן ייצור/משלוח ארוך — מטבח, מיזוג, ומוצרי עלי אקספרס. ביום המפתח: בדק בית. מיד אחרי: רצף עבודה צמוד ללא חורים (הריסה→תשתיות→איטום→בנייה→ריצוף→צבע→מטבח→שיש→סניטריה→ניקיון), עם חפיפת עבודות DIY (תאורה/אביזרים/צבע) בזמני המתנה לייצור השיש. יעד: ~25 ימי עבודה (5 שבועות).</div>
+    <div class="card" style="margin-top:10px">
+      <h3>✅ משימות שאפשר להשלים לפני קבלת המפתח</h3>
+      <ul class="flat"><li><label><input type="checkbox" class="action" data-id="prep0">לקבל 2–3 הצעות מחיר למטבח ולתכנן (אפשר לסגור ספק; מדידה סופית אחרי מפתח)</label></li><li><label><input type="checkbox" class="action" data-id="prep1">להזמין מבעוד מועד מוצרי עלי אקספרס (משלוח 2–6 שבועות): תאורה, ברזים, ראש מקלחת, אביזרים, מקלחון</label></li><li><label><input type="checkbox" class="action" data-id="prep2">לאתר ולסגור אנשי מקצוע ולתאם רצף עבודה (אינסטלטור→חשמלאי→איטום→גבסן→רצף→צבעי)</label></li><li><label><input type="checkbox" class="action" data-id="prep3">לבדוק עם מהנדס/אדריכל את תוכנית המכר — האם קיר האמבטיה הכללית ניתן להזזה (לא נושא/ממ"ד)</label></li><li><label><input type="checkbox" class="action" data-id="prep4">לתכנן פריסת חשמל/תאורה ונקודות (מה להוסיף/להזיז)</label></li><li><label><input type="checkbox" class="action" data-id="prep5">לקבל הצעות מיזוג ולהזמין מערכת (מיני-מרכזי+זונים / מולטי-ספליט)</label></li><li><label><input type="checkbox" class="action" data-id="prep6">לשכור בודק בית למסירה (~1,500–3,000 ₪)</label></li><li><label><input type="checkbox" class="action" data-id="prep7">לבחור גופי תאורה, ברזים, סניטריה, ארונות אמבטיה</label></li><li><label><input type="checkbox" class="action" data-id="prep8">לסגור תקציב ומימון לשיפוץ (משכנתא/הון עצמי)</label></li></ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>🗓️ לו"ז ביצוע מפורט (רפרנס — מניח scope מלא, 5 שבועות)</h2>
+    <div class="week"><div class="week-head"><span class="wk">שבוע 1</span><span class="wk-title">הריסות, תשתיות ואיטום</span><span class="trade">הורס · אינסטלטור · חשמלאי · איטום</span></div><ul class="tasks"><li><label><input type="checkbox" class="gtask" data-id="w1t0"><span class="days">ימים 1-2</span> הריסת הקיר בשירותים (אם נבחר ואושר שאינו נושא/ממ"ד) ופינוי פסולת. חלל המטבח נשאר נקי.</label></li><li><label><input type="checkbox" class="gtask" data-id="w1t1"><span class="days">ימים 3-4</span> אינסטלטור + חשמלאי: צנרת מים/ניקוז חדשה והעתקת נקודות חשמל לאמבטיה ולמטבח.</label></li><li><label><input type="checkbox" class="gtask" data-id="w1t2"><span class="days">ימים 5</span> ⭐ קריטי — איטום! יישום איטום על רצפה וקירות האמבטיה (כולל בדיקת הצפה אם נדרש).</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">שבוע 2</span><span class="wk-title">בנייה וסגירות</span><span class="trade">גבסן/בנאי</span></div><ul class="tasks"><li><label><input type="checkbox" class="gtask" data-id="w2t0"><span class="days">ימים 6-8</span> בניית קירות חדשים (בלוק/גבס ירוק עמיד מים) וסגירת חריצי חשמל/אינסטלציה.</label></li><li><label><input type="checkbox" class="gtask" data-id="w2t1"><span class="days">ימים 9-10</span> התקנת ניאגרה סמויה לאסלה והכנת הרצפה לריצוף.</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">שבוע 3</span><span class="wk-title">ריצוף, חיפוי ושפכטל</span><span class="trade">רצף · צבעי</span></div><ul class="tasks"><li><label><input type="checkbox" class="gtask" data-id="w3t0"><span class="days">ימים 11-13</span> ריצוף האמבטיה וחיפוי קירות באריחים/קרמיקה שבחרתם.</label></li><li><label><input type="checkbox" class="gtask" data-id="w3t1"><span class="days">ימים 14-15</span> שפכטל + צבע ראשון. קירות המטבח מוכנים להתקנה.</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">שבוע 4</span><span class="wk-title">מטבח ושיש</span><span class="trade">נגר מטבחים · איש שיש · חשמלאי</span></div><ul class="tasks"><li><label><input type="checkbox" class="gtask" data-id="w4t0"><span class="days">ימים 16-17</span> התקנת ארונות המטבח (~יומיים).</label></li><li><label><input type="checkbox" class="gtask" data-id="w4t1"><span class="days">ימים 18</span> איש השיש מודד על הארונות.</label></li><li><label><input type="checkbox" class="gtask" data-id="w4t2"><span class="days">ימים 19-22</span> ייצור שיש. במקביל: צבע סופי, גופי תאורה ואביזרי קצה.</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">שבוע 5</span><span class="wk-title">סגירות, פינישים וניקיון</span><span class="trade">איש שיש · אינסטלטור · זגג</span></div><ul class="tasks"><li><label><input type="checkbox" class="gtask" data-id="w5t0"><span class="days">ימים 23</span> התקנת משטח השיש והכיור במטבח.</label></li><li><label><input type="checkbox" class="gtask" data-id="w5t1"><span class="days">ימים 24</span> התקנת סניטריה (אסלה, ברזים, מקלחון) וחיבור סיפונים.</label></li><li><label><input type="checkbox" class="gtask" data-id="w5t2"><span class="days">ימים 25</span> מקלחון זכוכית, ניקיון סופי — וניתן להיכנס. 🎉</label></li></ul></div>
+  </section>
+
+  <section>
+    <h2>👷 מדריך אנשי מקצוע</h2>
+    <div class="card"><table>
+      <tr><th>בעל מקצוע</th><th>תפקיד</th><th>מתי</th></tr>
+      <tr><td><b>מעצב/ת פנים או אדריכל/ית</b></td><td>תכנון פריסה, גמרים, ופיקוח. אופציונלי אך מומלץ לתכנון מטבח+אמבטיות.</td><td class="num">לפני התחלה</td></tr><tr><td><b>מהנדס קונסטרוקציה</b></td><td>חובה אם נוגעים בקיר נושא — אישור ותכנון תגבור. ⚠️ קיר ממ"ד אסור בכל מקרה.</td><td class="num">לפני הריסת קיר</td></tr><tr><td><b>הורס + מכולה לפינוי פסולת</b></td><td>הריסת קיר/אלמנטים, פינוי פסולת. לרוב חלק מהשיפוצניק.</td><td class="num">שבוע 1</td></tr><tr><td><b>אינסטלטור</b></td><td>צנרת מים וניקוז חדשה לאמבטיה/מטבח, התקנת סניטריה בסוף.</td><td class="num">שבוע 1 + שבוע 5</td></tr><tr><td><b>חשמלאי מוסמך</b></td><td>העתקת/הוספת נקודות חשמל, לוח, תאורה, אביזרי קצה. חובה מוסמך.</td><td class="num">שבוע 1 + שבוע 4</td></tr><tr><td><b>איש איטום</b></td><td>איטום רצפה/קירות באזורים רטובים (אמבטיה) — שלב קריטי למניעת נזקי רטיבות.</td><td class="num">שבוע 1</td></tr><tr><td><b>גבסן / בנאי</b></td><td>בניית קירות חדשים (בלוק/גבס ירוק עמיד מים), סגירת חריצים.</td><td class="num">שבוע 2</td></tr><tr><td><b>רצף</b></td><td>ריצוף וחיפוי קירות באריחים/קרמיקה.</td><td class="num">שבוע 3</td></tr><tr><td><b>צבעי</b></td><td>שפכטל, יסוד, צבע.</td><td class="num">שבוע 3–4</td></tr><tr><td><b>נגר מטבחים / ספק מטבח</b></td><td>תכנון, אספקה והתקנת ארונות מטבח.</td><td class="num">שבוע 4</td></tr><tr><td><b>איש שיש/אבן</b></td><td>מדידה, ייצור והתקנת משטח מטבח (קוורץ/אבן).</td><td class="num">שבוע 4–5</td></tr><tr><td><b>זגג</b></td><td>התקנת מקלחון זכוכית (אם נבחר).</td><td class="num">שבוע 5</td></tr>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>🔑 מסירה ובדק בית (לקראת ~2028)</h2>
+    <div class="warn">🔍 מומלץ לשכור בודק בית (מהנדס/הנדסאי) לפרוטוקול המסירה — עלות ~1,500–3,000 ₪, מאתר ליקויים שקשה לראות. כל ליקוי שנרשם בפרוטוקול — הקבלן חייב לתקן.</div>
+    <div class="warn" style="background:#3b1f06;border-color:#b45309">⏱️ לפי חוק המכר: איחור מסירה של מעל 60 יום מזכה בפיצוי — שכר דירה חודשי (לפי שווי הדירה) רטרואקטיבית מהיום הראשון. תעדו את מועד המסירה החוזי (תשלום אחרון 30/09/28).</div>
+    <div class="card" style="margin-top:12px">
+      <h3>תקופות בדק ואחריות (חוק המכר)</h3>
+      <table>
+        <tr><th>רכיב</th><th>תקופת בדק</th><th>אחריות</th></tr>
+        <tr><td>ריצוף וחיפוי פנים (שקיעה/התנתקות/סדקים)</td><td class="num">2 שנים</td><td class="num">+3 שנים</td></tr><tr><td>צנרת מים/ביוב/דלוחין/מרזבים</td><td class="num">4 שנים</td><td class="num">+3 שנים</td></tr><tr><td>איטום המבנה (רטיבות/נזילות)</td><td class="num">4 שנים</td><td class="num">+3 שנים</td></tr><tr><td>סדקים >1.5 מ"מ ברכיבים לא נושאים</td><td class="num">5 שנים</td><td class="num">+3 שנים</td></tr><tr><td>התנתקות/התקלפות חיפוי חוץ</td><td class="num">7 שנים</td><td class="num">+3 שנים</td></tr><tr><td>מנועים/מכונות/דודים</td><td class="num">3 שנים</td><td class="num">+3 שנים</td></tr><tr><td>קילוף צבע פנים / כל אי-התאמה אחרת</td><td class="num">שנה</td><td class="num">+3 שנים</td></tr><tr><td>אי-התאמה יסודית (שלד/קונסטרוקציה)</td><td class="num">—</td><td class="num">אחריות 20 שנה</td></tr>
+      </table>
+      <div class="src"><a href="https://www.sii.org.il/he/impairments/" target="_blank">חוק המכר (דירות) — תקופות בדק ואחריות ↗</a></div>
+    </div>
+    <h3 style="margin-top:18px">✅ צ'קליסט בדיקה ביום המסירה</h3>
+    <div class="card" style="margin-bottom:12px">
+      <div>התקדמות בדיקה: <span id="hand-pct">0%</span></div>
+      <div class="progress"><i id="hand-bar"></i></div>
+    </div>
+    <div class="week"><div class="week-head"><span class="wk">כללי / מסמכים</span></div><ul class="tasks"><li><label><input type="checkbox" class="handcheck" data-id="h0_0"> מספר דירה תואם לחוזה</label></li><li><label><input type="checkbox" class="handcheck" data-id="h0_1"> קבלת כל המפתחות</label></li><li><label><input type="checkbox" class="handcheck" data-id="h0_2"> טופס 4 / תעודת גמר</label></li><li><label><input type="checkbox" class="handcheck" data-id="h0_3"> מוני מים וחשמל על שמכם</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">קירות ותקרות</span></div><ul class="tasks"><li><label><input type="checkbox" class="handcheck" data-id="h1_0"> אין סדקים</label></li><li><label><input type="checkbox" class="handcheck" data-id="h1_1"> יישור וזוויות ישרות</label></li><li><label><input type="checkbox" class="handcheck" data-id="h1_2"> צבע אחיד ללא כתמים</label></li><li><label><input type="checkbox" class="handcheck" data-id="h1_3"> אין סימני רטיבות</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">ריצוף וחיפוי</span></div><ul class="tasks"><li><label><input type="checkbox" class="handcheck" data-id="h2_0"> אריחים שלמים וללא שריטות</label></li><li><label><input type="checkbox" class="handcheck" data-id="h2_1"> פוגות אחידות וישרות</label></li><li><label><input type="checkbox" class="handcheck" data-id="h2_2"> אין נקישות/חלל מתחת לאריח</label></li><li><label><input type="checkbox" class="handcheck" data-id="h2_3"> שיפועי ניקוז בחדרים רטובים</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">דלתות וחלונות</span></div><ul class="tasks"><li><label><input type="checkbox" class="handcheck" data-id="h3_0"> פתיחה/סגירה חלקה</label></li><li><label><input type="checkbox" class="handcheck" data-id="h3_1"> אטימות (אוויר/מים)</label></li><li><label><input type="checkbox" class="handcheck" data-id="h3_2"> זיגוג ללא שריטות/סדקים</label></li><li><label><input type="checkbox" class="handcheck" data-id="h3_3"> תריסים חשמליים/ידניים תקינים</label></li><li><label><input type="checkbox" class="handcheck" data-id="h3_4"> מנעולים ואטמים</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">מטבח (הכנות)</span></div><ul class="tasks"><li><label><input type="checkbox" class="handcheck" data-id="h4_0"> נקודת גז לבישול</label></li><li><label><input type="checkbox" class="handcheck" data-id="h4_1"> נקודות מים + ניקוז</label></li><li><label><input type="checkbox" class="handcheck" data-id="h4_2"> נקודות חשמל ושקע מדיח</label></li><li><label><input type="checkbox" class="handcheck" data-id="h4_3"> חיפוי קרמיקה תקין</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">חדרי רחצה (×3)</span></div><ul class="tasks"><li><label><input type="checkbox" class="handcheck" data-id="h5_0"> לחץ מים חם וקר</label></li><li><label><input type="checkbox" class="handcheck" data-id="h5_1"> ניקוז מהיר ללא עיכוב</label></li><li><label><input type="checkbox" class="handcheck" data-id="h5_2"> אסלה ומיכל הדחה דו-כמותי</label></li><li><label><input type="checkbox" class="handcheck" data-id="h5_3"> ברזים תקינים</label></li><li><label><input type="checkbox" class="handcheck" data-id="h5_4"> אין נזילות/רטיבות</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">חשמל</span></div><ul class="tasks"><li><label><input type="checkbox" class="handcheck" data-id="h6_0"> כל נקודות המאור והשקעים עובדים</label></li><li><label><input type="checkbox" class="handcheck" data-id="h6_1"> לוח חשמל + מפסקי פחת</label></li><li><label><input type="checkbox" class="handcheck" data-id="h6_2"> הארקה תקינה</label></li><li><label><input type="checkbox" class="handcheck" data-id="h6_3"> אינטרקום עובד</label></li><li><label><input type="checkbox" class="handcheck" data-id="h6_4"> 3 נקודות תקשורת/טלוויזיה</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">מיזוג (הכנה)</span></div><ul class="tasks"><li><label><input type="checkbox" class="handcheck" data-id="h7_0"> צנרת/ניקוז למעבה במרפסת שירות</label></li><li><label><input type="checkbox" class="handcheck" data-id="h7_1"> כבלי פיקוד מהמעבה למאייד</label></li><li><label><input type="checkbox" class="handcheck" data-id="h7_2"> נקודת חשמל למיזוג</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">ממ"ד</span></div><ul class="tasks"><li><label><input type="checkbox" class="handcheck" data-id="h8_0"> דלת הדף נפתחת/נאטמת</label></li><li><label><input type="checkbox" class="handcheck" data-id="h8_1"> חלון/תריס הדף תקינים</label></li><li><label><input type="checkbox" class="handcheck" data-id="h8_2"> מסנן אוויר (פילטר)</label></li><li><label><input type="checkbox" class="handcheck" data-id="h8_3"> נקודות חשמל ותקשורת</label></li></ul></div><div class="week"><div class="week-head"><span class="wk">מרפסת ושירות</span></div><ul class="tasks"><li><label><input type="checkbox" class="handcheck" data-id="h9_0"> שיפוע ניקוז במרפסת</label></li><li><label><input type="checkbox" class="handcheck" data-id="h9_1"> מעקה תקין ויציב</label></li><li><label><input type="checkbox" class="handcheck" data-id="h9_2"> ברז דלי</label></li><li><label><input type="checkbox" class="handcheck" data-id="h9_3"> מתקן תליית כביסה</label></li></ul></div>
+    <div class="card scroll" style="margin-top:14px">
+      <h3>ליקויים, אחריות ותיקון</h3>
+      <div class="metric-row"><div class="metric"><span>פתוחים</span><strong id="defect-open">0</strong></div><div class="metric"><span>קריטיים</span><strong id="defect-critical">0</strong></div></div>
+      <table id="defects-table"><tr><th>תאריך</th><th>אזור</th><th>תיאור</th><th>חומרה</th><th>אחראי</th><th>יעד</th><th>סטטוס</th><th>תמונה</th><th></th></tr></table>
+      <button class="addbtn" id="add-defect">+ הוסף ליקוי</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>📇 ספקים והצעות מחיר</h2>
+    <div class="sub">הוסף בעלי מקצוע/ספקים, טלפון, הצעת מחיר וסטטוס. נשמר בדפדפן.</div>
+    <div class="card" style="margin-top:10px">
+      <table id="suppliers-table">
+        <tr><th>שם</th><th>תחום</th><th>טלפון</th><th>הצעה (₪)</th><th>סטטוס</th><th></th></tr>
+      </table>
+      <button class="addbtn" id="add-supplier">+ הוסף ספק</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>🛒 רשימת קניות / Wishlist עלי אקספרס</h2>
+    <div class="sub">מוצרי DIY לקנייה: פריט, לינק, מחיר, והאם הוזמן. נשמר בדפדפן.</div>
+    <div class="card" style="margin-top:10px">
+      <table id="shop-table">
+        <tr><th>פריט</th><th>לינק</th><th>מחיר (₪)</th><th>הוזמן?</th><th></th></tr>
+      </table>
+      <button class="addbtn" id="add-shop">+ הוסף פריט</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>🏘️ סקירת שכונה — נוריות, ראשון לציון</h2>
+    <div class="card nb">
+      <p style="margin-top:0">שכונת התחדשות חדשה הנבנית על קרקע שפונתה מבסיס צבאי (מתחם צריפין), חלק מאשכול שכונות חדש (נוריות, רקפת, נרקיסים, חצבים). בנייה מודרנית מתוכננת בקנה מידה רחב, כ-3,600 יח"ד.</p>
+      <div><b>אוכלוסייה:</b> בעיקר זוגות צעירים, משפחות צעירות ומשפרי דיור הנמשכים להיצע חדש ואיכותי. שכונה צומחת — אופי קהילתי מתגבש.</div>
+      <div><b>חינוך:</b> מתוכננים בתי ספר יסודיים, חטיבות, תיכונים וגנים חדשים לשרת את האוכלוסייה הצעירה (חלקם בהקמה).</div>
+      <div><b>תחבורה:</b> נגישות גבוהה: צמוד לכבישים 431, 6, 4; בסמיכות לתחנת רכבת ראשונים; מתוכנן לעבור בה הקו החום (רכבת קלה).</div>
+      <div><b>פיתוח:</b> 54 היתרי בנייה בשנה האחרונה; מתוכננים פארק גדול, גינות, שבילי אופניים, מרכז קהילתי, מסחר ומוסדות ציבור.</div>
+      <div><b>מחירים:</b> עדיין מתחת לממוצע העירוני; שכונה צעירה עם פוטנציאל עליית ערך ככל שהתשתיות והמסחר מבשילים.</div>
+      <div class="pillrow"><span class="pill">✓ בנייה חדשה ומתוכננת</span><span class="pill">✓ תשתיות ותחבורה עתידית (קו חום + רכבת)</span><span class="pill">✓ מחיר כניסה נמוך יחסית</span><span class="pill">✓ פארקים ושטחים ציבוריים מתוכננים</span></div>
+      <div class="pillrow"><span class="pill">⚠ שכונה בהקמה — אבק/רעש בנייה ושירותים בהתהוות בשנים הקרובות</span><span class="pill">⚠ מוסדות חינוך ומסחר עדיין בהקמה</span><span class="pill">⚠ אופי קהילתי עדיין מתגבש (לא 'מבוסס')</span></div>
+      <div class="src"><a href="https://aventurine.co.il/rishon-lezion-noriyotorim/" target="_blank">סקירת נדל"ן נוריות 2026 — אוונטורין ↗</a><a href="https://www.rishonlezion.muni.il/Residents/CommunitySports/NewResidents/pages/nuriyot.aspx" target="_blank">עיריית ראשון לציון — שכונת נוריות ↗</a><a href="https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C" target="_blank">נוריות — מדלן (מחירי עסקאות) ↗</a></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>🔁 פלופ — מסלולי שדרוג עתידיים</h2>
+    <div class="sub">אוכלוסייה אשכנזית/מרכז-שמאל, סוציואקונומי גבוה, חינוך ממלכתי איכותי, פשיעה נמוכה. 📍 מיקום: ציר תל אביב↔אשדוד — קרבה לעבודה (אישה ברמת גן, בעל בחולון) ולמשפחה (הורים באשדוד, חמים ברמלה). עדיף בית קרקע או פנטהאוז, חלום לנוף.</div>
+    <div class="warn">💡 מועד המכירה טרם אומת מול סעיף ההגבלות בחוזה, ולכן מסלול השדרוג הוא תרחיש עתידי בלבד. השווי המוערך כיום ~3.25מ'; הטווחים למטה הם מחירי יעד בציר ת"א↔אשדוד.</div>
+    <div class="tier"><h4>מדרגה 1 — צעד ריאלי — <span class="price">~4–5.5 מ' ₪</span></h4><div class="sub">📍 נס ציונה, ראשון לציון (שכונות מבוססות), רחובות, יבנה · פנטהאוז / דירת גן</div><div style="margin-top:4px">מרכזי לכל היעדים (ר"ג/חולון/אשדוד/רמלה). נס ציונה — סוציו' גבוה + חינוך מצוין. מיני-פנטהאוז נס ציונה ~4.6מ', דירת גן 5 חד'+גינה ~5מ'.</div></div><div class="tier"><h4>מדרגה 2 — שדרוג משמעותי — <span class="price">~5.5–8 מ' ₪</span></h4><div class="sub">📍 גבעתיים, רמת גן (מבוסס), נס ציונה (פרימיום) · פנטהאוז / מיני-פנטהאוז עם נוף</div><div style="margin-top:4px">גבעתיים/ר"ג צמודים לת"א ולעבודת האישה ברמת גן; סוציו' גבוה, חינוך ממלכתי חזק, קו רכבת קלה.</div></div><div class="tier"><h4>מדרגה 3 — חלום — <span class="price">~8–15+ מ' ₪</span></h4><div class="sub">📍 נס ציונה, ראשל"צ (נווה הדרים/נחלת יהודה), גבעתיים, רחובות · בית קרקע / קוטג' עם גינה ונוף</div><div style="margin-top:4px">בית קרקע במרכז הציר — שומר על הקרבה לעבודה ולמשפחה. היעד היוקרתי עם גינה ונוף.</div></div>
+    <div class="src"><a href="https://www.ice.co.il/top-5/news/article/837064" target="_blank">דירוג ערים טובות למגורים — ice ↗</a><a href="https://www.ynet.co.il/article/4961359" target="_blank">מפת החינוך — ynet ↗</a><a href="https://www.yokra-estate.co.il/%D7%9E%D7%90%D7%9E%D7%A8%D7%99%D7%9D/451-%D7%91%D7%AA%D7%99%D7%9D-%D7%95%D7%93%D7%99%D7%A8%D7%95%D7%AA-%D7%9C%D7%9E%D7%9B%D7%99%D7%A8%D7%94-%D7%91%D7%A0%D7%A1-%D7%A6%D7%99%D7%95%D7%A0%D7%94.html" target="_blank">בתים ודירות בנס ציונה — yokra ↗</a></div>
+  </section>
+
+  <section>
+    <h2>📋 דברים לביצוע</h2>
+    <div class="card"><ul class="flat"><li><label><input type="checkbox" class="action" data-id="spec">לקרוא תוכנית מכר + מפרט ולסמן מה כלול בגימור</label><span class="pri">🔴 דחוף</span></li><li><label><input type="checkbox" class="action" data-id="wall">לבדוק בתוכנית אם הקיר להזזה מחיצה / נושא / ממ"ד</label><span class="pri">🔴 דחוף</span></li><li><label><input type="checkbox" class="action" data-id="next_pay">תשלום הבא 07/06/26 (~242,569 ₪)</label><span class="pri">🔴 דחוף</span></li><li><label><input type="checkbox" class="action" data-id="kitchen_quote">לקבל 2–3 הצעות מחיר למטבח (אספקה+התקנה)</label><span class="pri">🟡 בינוני</span></li><li><label><input type="checkbox" class="action" data-id="pros_quotes">לאתר אנשי מקצוע ולקבל הצעות (אינסטלטור/חשמלאי/רצף/גבסן/צבעי)</label><span class="pri">🟡 בינוני</span></li><li><label><input type="checkbox" class="action" data-id="budget">לקבע תקציב שיפוץ סופי לפי האפשרויות שנבחרו</label><span class="pri">🟡 בינוני</span></li><li><label><input type="checkbox" class="action" data-id="handover">לעקוב אחר מועד מסירה (~Q3 2028) ולתעד עיכובים</label><span class="pri">🟢 רגיל</span></li></ul></div>
+  </section>
+
+  <section>
+    <h2>⚖️ מגבלות מחיר למשתכן</h2>
+    <div class="card restr">
+      <div><b>נעילת מכירה:</b> לא אומת: תקופת ההגבלה תלויה במסלול ובסעיף בחוזה החתום. קובץ 128A5.pdf שבפרויקט הוא תוכנית דירה בלבד ואינו כולל את הסעיף. יש לאמת בחוזה או מול עו"ד לפני תכנון מכירה.</div>
+      <div><b>קנס מכירה מוקדמת:</b> לא אומת. אין להציג סכום קנס או מועד מכירה חופשית ללא סעיף החוזה והמסלול המדויק.</div>
+      <div><b>השכרה:</b> לא אומת. יש לבדוק את תנאי ההשכרה בחוזה החתום ובהוראות המסלול.</div>
+      <div><b>מס שבח אחרי ההגבלה:</b> במכירה: דירה יחידה — פטור ממס שבח עד התקרה (~5 מ' ₪); דירה נוספת — מס שבח על הרווח. כדאי ייעוץ מס לפני מכירה.</div>
+      <div class="src"><a href="https://hagitlaw.com/%D7%94%D7%92%D7%91%D7%9C%D7%95%D7%AA-%D7%9E%D7%9B%D7%99%D7%A8%D7%94-%D7%9E%D7%97%D7%99%D7%A8-%D7%9C%D7%9E%D7%A9%D7%AA%D7%9B%D7%9F/" target="_blank">הגבלות מכירה מחיר למשתכן 2026 ↗</a></div>
+    </div>
+  </section>
+
+  <footer>עודכן 2026-06-20 · index.html self-contained · עריכות מקומיות עם גיבוי/שחזור · מקור-אמת: apartment.json + renovation.json + management.json</footer>
+</div>
+<script>
+const DATA = {"options": [{"key": "kitchen_supply", "he": "מטבח — אספקה והתקנה (ארונות)", "category": "מטבח", "default": true, "essential": true, "cost_min": 30000, "cost_max": 70000, "days": 2, "pros": ["kitchen", "electrician", "plumber"], "tasks": ["תכנון ומדידת מטבח", "הזמנת מטבח", "התקנת ארונות", "חיבור חשמל ומים"], "note": "לקחתם זיכוי על מטבח הקבלן (נספח ג', 10,000 ₪ מקוזז). אספקה והתקנה ע\"י נגר מטבחים (לא לבד).", "diy": false, "value": "high"}, {"key": "kitchen_counter", "he": "משטח שיש/קוורץ למטבח", "category": "מטבח", "default": true, "essential": false, "cost_min": 8000, "cost_max": 20000, "days": 1, "pros": ["stone"], "tasks": ["מדידת שיש על הארונות", "ייצור", "התקנת משטח וכיור"], "note": "דורש מקצוען — ייצור והתקנה מדויקים.", "diy": false, "value": "high"}, {"key": "kitchen_appliances", "he": "מוצרי חשמל למטבח", "category": "מטבח", "default": false, "essential": false, "cost_min": 10000, "cost_max": 35000, "days": 1, "pros": [], "tasks": ["בחירת והזמנת מוצרי חשמל", "התקנה"], "note": "תנור, כיריים, מקרר, מדיח, קולט אדים.", "diy": true, "diy_note": "רוב המוצרים הרכבה/חיבור עצמי; כיריים גז למקצוען.", "prod_market_min": 10000, "prod_market_max": 35000, "prod_ali_min": 7000, "prod_ali_max": 25000, "value": "low"}, {"key": "bath_master", "he": "שיפוץ חדר רחצה הורים", "category": "אמבטיה", "default": true, "essential": false, "cost_min": 18000, "cost_max": 30000, "days": 5, "pros": ["plumber", "sealing", "tiler", "builder"], "tasks": ["פירוק", "אינסטלציה", "איטום", "ריצוף וחיפוי", "התקנת סניטריה"], "note": "עבודה רטובה — דורש מקצוענים (איטום/ריצוף קריטיים).", "diy": false, "value": "high"}, {"key": "bath_guest", "he": "שיפוץ חדר רחצה כללי/אורחים", "category": "אמבטיה", "default": true, "essential": false, "cost_min": 15000, "cost_max": 25000, "days": 4, "pros": ["plumber", "sealing", "tiler"], "tasks": ["פירוק", "אינסטלציה", "איטום", "ריצוף וחיפוי", "התקנת סניטריה"], "note": "עבודה רטובה — דורש מקצוענים.", "diy": false, "value": "high"}, {"key": "wall_move", "he": "הגדלת האמבטיה הכללית (הזזת קיר)", "category": "מבנה", "default": false, "essential": false, "cost_min": 8000, "cost_max": 20000, "days": 3, "pros": ["constructor", "demolition", "builder"], "tasks": ["בדיקה בתוכנית: הקיר של האמבט נושא/ממ\"ד?", "הריסה ופינוי", "בניית קיר חדש", "טיח ואיטום מחדש"], "note": "⚠️ מותנה: להגדיל את האמבטיה הכללית (אמבט). לוודא בתוכנית המכר שהקיר אינו נושא ואינו גובל בממ\"ד. שינוי קיר רטוב מחייב איטום מחדש.", "diy": false, "value": "med"}, {"key": "electrical", "he": "חשמל — נקודות נוספות/הזזה", "category": "תשתיות", "default": true, "essential": false, "cost_min": 5000, "cost_max": 15000, "days": 2, "pros": ["electrician"], "tasks": ["תכנון נקודות", "חיווט", "אביזרי קצה"], "note": "חובה חשמלאי מוסמך (חיווט בקיר).", "diy": false, "value": "low"}, {"key": "lighting", "he": "תאורה — גופים ומנורות", "category": "תשתיות", "default": true, "essential": false, "cost_min": 4000, "cost_max": 15000, "days": 1, "pros": ["electrician"], "tasks": ["בחירת גופי תאורה", "התקנה ותלייה"], "note": "ספוטים, גופים תלויים, LED.", "diy": true, "diy_note": "תלייה/החלפת גוף על נקודה קיימת — לבד. מנורת מטבח ~1,500₪ בארץ מול ~450₪ עלי.", "prod_market_min": 1500, "prod_market_max": 5000, "prod_ali_min": 450, "prod_ali_max": 1500, "value": "med"}, {"key": "ac", "he": "מיזוג אוויר (יחידות לא כלולות)", "category": "תשתיות", "default": true, "essential": false, "cost_min": 18000, "cost_max": 45000, "days": 2, "pros": ["electrician"], "tasks": ["בחירת מערכת + שליטה לכל חדר?", "התקנה ע\"י טכנאי מוסמך"], "note": "הקבלן מספק רק הכנה. לשליטת טמפרטורה לכל חדר: מיני-מרכזי+זונים (Airzone, +5–12K) או מולטי-ספליט. מיני-מרכזי רגיל = אזור אחד. צריכת חשמל: דומה אם מקררים את כל הבית; אם רק חדר-שניים — מפוצלים/זונים חוסכים (מיני-מרכזי רגיל מבזבז). אינוורטר+דירוג אנרגטי משפיעים יותר מהסוג.", "diy": false, "value": "high"}, {"key": "paint", "he": "צביעת הדירה (גוון/דקורטיבי)", "category": "גמרים", "default": true, "essential": false, "cost_min": 6000, "cost_max": 18000, "days": 3, "pros": ["painter"], "tasks": ["שפכטל", "יסוד", "צבע"], "note": "", "diy": true, "diy_note": "העבודה היא רוב העלות — לבד חוסך מאות שקלים. רק חומרים: צבע, גלילים, מסקנטייפ.", "prod_market_min": 1000, "prod_market_max": 3000, "prod_ali_min": 800, "prod_ali_max": 2500, "value": "med"}, {"key": "fixtures", "he": "ברזים, ראש מקלחת ואביזרי קצה", "category": "אמבטיה", "default": true, "essential": false, "cost_min": 3000, "cost_max": 9000, "days": 1, "pros": ["plumber"], "tasks": ["בחירה והזמנה", "התקנה"], "note": "מהמפרט: ברזים וסניטריה בסיסיים כלולים מהקבלן — זו החלפה/שדרוג. ברזים, ראש גשם, מתלים, אביזרים.", "diy": true, "diy_note": "החלפת ברז/ראש מקלחת על תשתית קיימת — לבד. ברז שחור מט ~1,500₪ בארץ מול ~350₪ עלי; סט ראש גשם ~3,000₪ בארץ.", "prod_market_min": 3000, "prod_market_max": 9000, "prod_ali_min": 800, "prod_ali_max": 3000, "value": "low"}, {"key": "shower_glass", "he": "מקלחון זכוכית", "category": "אמבטיה", "default": true, "essential": false, "cost_min": 2000, "cost_max": 6000, "days": 1, "pros": ["glazier"], "tasks": ["מדידה", "הזמנה", "התקנה"], "note": "", "diy": false, "value": "low"}, {"key": "bath_furniture", "he": "ארונות אמבטיה וסניטריה", "category": "אמבטיה", "default": true, "essential": false, "cost_min": 4000, "cost_max": 15000, "days": 1, "pros": ["plumber"], "tasks": ["בחירה והזמנה", "הרכבה ותלייה"], "note": "", "diy": true, "diy_note": "הרכבה ותלייה לבד; חיבור ניקוז/מים פשוט.", "prod_market_min": 3000, "prod_market_max": 12000, "prod_ali_min": 1200, "prod_ali_max": 5000, "value": "low"}, {"key": "doors", "he": "שדרוג דלתות פנים / ידיות", "category": "גמרים", "default": false, "essential": false, "cost_min": 6000, "cost_max": 20000, "days": 1, "pros": [], "tasks": ["בחירה", "החלפה/התקנה"], "note": "", "diy": true, "diy_note": "החלפת ידיות/צירים — לבד; החלפת משקוף — מורכב יותר.", "prod_market_min": 4000, "prod_market_max": 15000, "prod_ali_min": 2000, "prod_ali_max": 9000, "value": "low"}, {"key": "closets", "he": "נגרות / ארונות קיר", "category": "גמרים", "default": false, "essential": false, "cost_min": 8000, "cost_max": 30000, "days": 2, "pros": [], "tasks": ["תכנון", "הזמנה", "הרכבה והתקנה"], "note": "ארון הורים, ארונות חדרים.", "diy": true, "diy_note": "ארונות אריזה שטוחה (IKEA וכד') — הרכבה עצמית. נגרות נפחית — לנגר.", "prod_market_min": 6000, "prod_market_max": 22000, "prod_ali_min": 3000, "prod_ali_max": 12000, "value": "med"}, {"key": "smart", "he": "בית חכם / חשמל חכם", "category": "תשתיות", "default": false, "essential": false, "cost_min": 5000, "cost_max": 25000, "days": 1, "pros": ["electrician"], "tasks": ["תכנון", "התקנה והגדרה"], "note": "תריסים, תאורה, מיזוג חכמים.", "diy": true, "diy_note": "מפסקים/תקעים/בקרים חכמים plug-and-play — לבד. מפסק חכם זול משמעותית בעלי.", "prod_market_min": 4000, "prod_market_max": 18000, "prod_ali_min": 1500, "prod_ali_max": 8000, "value": "low"}, {"key": "balcony", "he": "מרפסת — דק/גינון", "category": "חוץ", "default": false, "essential": false, "cost_min": 3000, "cost_max": 15000, "days": 2, "pros": [], "tasks": ["תכנון", "ביצוע"], "note": "מרפסת 13 מ\"ר — דק/גינון.", "diy": true, "diy_note": "אריחי דק נעיצה (clip) וגינון — לבד.", "prod_market_min": 2000, "prod_market_max": 10000, "prod_ali_min": 1000, "prod_ali_max": 5000, "value": "med"}, {"key": "balcony_shade", "he": "כיסוי צל / סוכך-פרגולה למרפסת", "category": "חוץ", "default": false, "essential": false, "cost_min": 7000, "cost_max": 20000, "days": 2, "pros": [], "tasks": ["מדידה ותכנון", "הזמנה", "התקנה"], "note": "פרגולת אלומיניום ~550–1,500 ₪/מ\"ר (חשמלית 1,600–3,000). ל-13 מ\"ר: ~7–20K. קירוי בד/סנטף זול יותר.", "diy": true, "diy_note": "מצללת בד/שייד-סייל ניתן לתלות לבד (זול). פרגולת אלומיניום קבועה — מקצוען.", "prod_market_min": 1500, "prod_market_max": 6000, "prod_ali_min": 700, "prod_ali_max": 3000, "value": "med"}, {"key": "balcony_bars", "he": "סורגים / תריסים שקופים למרפסת", "category": "חוץ", "default": false, "essential": false, "cost_min": 4000, "cost_max": 12000, "days": 1, "pros": [], "tasks": ["מדידה", "הזמנה", "התקנה"], "note": "סורגים שקופים (פוליקרבונט) ~700–900 ₪/מ\"א כולל התקנה; נגד נפילה עם ת\"ת ~1,100–1,500 לחלון. תריסים שקופים/סגירה: זכוכית 600–1,200 ₪/מ\"ר.", "diy": false, "value": "low"}], "pros": {"design": "מעצב/ת פנים או אדריכל/ית", "constructor": "מהנדס קונסטרוקציה", "demolition": "הורס + מכולה לפינוי פסולת", "plumber": "אינסטלטור", "electrician": "חשמלאי מוסמך", "sealing": "איש איטום", "builder": "גבסן / בנאי", "tiler": "רצף", "painter": "צבעי", "kitchen": "נגר מטבחים / ספק מטבח", "stone": "איש שיש/אבן", "glazier": "זגג"}, "kitchen_credit": 10000, "index_base": 139.3935, "shopping_seed": ["מוצרי חשמל למטבח", "תאורה — גופים ומנורות", "צביעת הדירה (גוון/דקורטיבי)", "ברזים, ראש מקלחת ואביזרי קצה", "ארונות אמבטיה וסניטריה", "שדרוג דלתות פנים / ידיות", "נגרות / ארונות קיר", "בית חכם / חשמל חכם", "מרפסת — דק/גינון", "כיסוי צל / סוכך-פרגולה למרפסת"], "pros_seed": ["מעצב/ת פנים או אדריכל/ית", "מהנדס קונסטרוקציה", "הורס + מכולה לפינוי פסולת", "אינסטלטור", "חשמלאי מוסמך", "איש איטום", "גבסן / בנאי", "רצף", "צבעי", "נגר מטבחים / ספק מטבח", "איש שיש/אבן", "זגג"], "value_seed": [{"date": "2025-12", "value": 2450000, "note": "מחיר רכישה"}, {"date": "2026-06", "value": 3250000, "note": "הערכת שוק (מחקר אייג'נט)"}], "rooms_seed": [{"room": "ח. מגורים (סלון)", "len": 5.15, "wid": 4.45}, {"room": "מטבח", "len": 2.95, "wid": 3.05}, {"room": "ח. שינה הורים", "len": 3.55, "wid": 3.05}, {"room": "חדר ארונות", "len": 1.7, "wid": 1.8}, {"room": "ח. שינה", "len": 4.0, "wid": 2.85}, {"room": "ח. שינה", "len": 3.3, "wid": 3.1}, {"room": "ח. שינה", "len": 2.95, "wid": 3.15}, {"room": "ממ\"ד (חדר שינה)", "len": 3.35, "wid": 2.95}, {"room": "חדר רחצה הורים", "len": 1.88, "wid": 2.03}, {"room": "חדר רחצה כללי", "len": 1.13, "wid": 1.73}, {"room": "שירותי אורחים", "len": 1.48, "wid": 1.78}, {"room": "מרפסת שמש", "len": 5.7, "wid": 2.25}, {"room": "מרפסת שירות", "len": 1.7, "wid": 1.65}], "payments": [{"date": "2025-12-07", "amount_incl_vat": 169798.09, "indexed": false, "paid": true}, {"date": "2026-01-18", "amount_incl_vat": 315339.31, "indexed": false, "paid": true}, {"date": "2026-06-07", "amount_incl_vat": 242568.7, "indexed": true, "paid": false}, {"date": "2026-10-07", "amount_incl_vat": 242568.7, "indexed": true, "paid": false}, {"date": "2027-02-07", "amount_incl_vat": 242568.7, "indexed": true, "paid": false}, {"date": "2027-06-07", "amount_incl_vat": 242568.7, "indexed": true, "paid": false}, {"date": "2027-10-07", "amount_incl_vat": 242568.7, "indexed": true, "paid": false}, {"date": "2028-02-07", "amount_incl_vat": 242568.7, "indexed": true, "paid": false}, {"date": "2028-06-07", "amount_incl_vat": 242568.7, "indexed": true, "paid": false}, {"date": "2028-09-30", "amount_incl_vat": 242568.7, "indexed": true, "paid": false}], "management": {"_comment": "Editable management seeds. Runtime edits are stored in the browser and can be exported/imported as a versioned backup.", "valuation_model": {"base_value_nis": 3250000, "base_label": "הערכת שוק ידנית 2026-06", "adjustments": [{"key": "new_build", "label": "פרמיית בנייה חדשה", "pct": 3, "reason": "דירה חדשה בפרויקט חדש"}, {"key": "balcony", "label": "מרפסת 13 מ״ר", "pct": 1, "reason": "שטח חוץ שימושי"}, {"key": "delivery", "label": "מסירה עתידית", "pct": -2, "reason": "אי-נזילות וסיכון עד מסירה"}, {"key": "boundary", "label": "אי-ודאות אזור סטטיסטי", "pct": -2, "reason": "Nadlan ממפה את נוריות למרום ראשון"}], "scenarios": [{"key": "conservative", "label": "שמרני", "multiplier": 0.95}, {"key": "base", "label": "בסיס", "multiplier": 1.0}, {"key": "optimistic", "label": "אופטימי", "multiplier": 1.05}]}, "comparables": [{"date": "2026-06", "address": "נוריות — קטגוריית 6 חדרים", "rooms": 6, "area_sqm": null, "price_nis": 3565909, "kind": "מדלן — אינדיקציית בנייה חדשה", "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C", "confidence": "בינונית", "notes": "סיכום קטגוריה עדכני; לא מודעה בודדת ולא עסקה סגורה"}, {"date": "2025-03", "address": "מרום ראשון — אזור סטטיסטי", "rooms": null, "area_sqm": null, "price_nis": 3997300, "kind": "סיכום ממשלתי — כל החדרים", "source_url": "https://data.nadlan.gov.il/api/pages/neighborhood/buy/65209940.json", "confidence": "נמוכה לנכס", "notes": "נתון מצרפי, גבול ישן, לא בר-השוואה ישירה"}, {"date": "2026-06", "address": "נרקיסים — קטגוריית 6 חדרים", "rooms": 6, "area_sqm": null, "price_nis": 4003333, "kind": "מדלן — שכונה חדשה להשוואה", "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%A8%D7%A7%D7%99%D7%A1%D7%99%D7%9D-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C", "confidence": "בינונית", "notes": "שכונה סמוכה וחדשה; אינדיקציית קטגוריה ולא עסקה בודדת"}], "cash_flow": {"available_cash_nis": 0, "monthly_contribution_nis": 0, "contingency_pct": 12, "renovation_target_nis": 165000}, "renovation_tracking": [], "defects": []}, "market": {"query": "נוריות ראשון לציון", "fetched_at": "2026-06-20", "source": "nadlan.gov.il + GovMap (public unattended endpoints)", "source_url": "https://data.nadlan.gov.il/api/pages/neighborhood/buy/65209940.json", "location": {"requested_label": "נוריות, ראשון לציון", "current_id": "67689667", "x": 184121.2095, "y": 652607.6766, "resolution": "verified_seed", "statistical_area_id": "65209940", "statistical_area_name": "מרום ראשון", "boundary_name_mismatch": true}, "raw_count": 0, "deals": [], "summary": null, "public_market_summary": {"dataset_version": "28-07-2025", "statistical_area_name": "מרום ראשון", "settlement_name": "ראשון לציון", "settlement_id": 8300, "all_rooms_last_year_avg_price_nis": 3911750, "all_rooms_price_change_pct": 1.55, "five_rooms_last_year_avg_price_nis": null, "latest_neighborhood_period": {"year": 2025, "month": 3}, "latest_neighborhood_price_nis": 3997300}, "supplemental_sources": [{"source": "madlan", "source_type": "market_indicator", "comparison_area": "נוריות", "zone_name": "נוריות, בראשון לציון", "source_updated_at": null, "active_for_sale_count": 3, "active_for_rent_count": 3, "year_deals_count": 48, "total_deals_count": 197, "average_price_per_sqm_nis": 21467.99, "prices_by_rooms": {"2": {"new_build_price_nis": null, "second_hand_price_nis": null, "rent_nis": null}, "3": {"new_build_price_nis": 1320782, "second_hand_price_nis": null, "rent_nis": null}, "4": {"new_build_price_nis": 1751045, "second_hand_price_nis": null, "rent_nis": null}, "5": {"new_build_price_nis": 2767266, "second_hand_price_nis": 3325000, "rent_nis": null}, "6": {"new_build_price_nis": 3565909, "second_hand_price_nis": 3637143, "rent_nis": null}, "דירות מיוחדות": {"new_build_price_nis": null, "second_hand_price_nis": null, "rent_nis": null}, "בתים פרטיים": {"new_build_price_nis": null, "second_hand_price_nis": null, "rent_nis": null}}, "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C", "fetched_at": "2026-06-20T07:20:02.135573+00:00"}, {"source": "madlan", "source_type": "market_indicator", "comparison_area": "נרקיסים", "zone_name": "נרקיסים, בראשון לציון", "source_updated_at": null, "active_for_sale_count": 53, "active_for_rent_count": 1, "year_deals_count": 107, "total_deals_count": 207, "average_price_per_sqm_nis": 26516.59, "prices_by_rooms": {"2": {"new_build_price_nis": null, "second_hand_price_nis": null, "rent_nis": null}, "3": {"new_build_price_nis": null, "second_hand_price_nis": 2213750, "rent_nis": null}, "4": {"new_build_price_nis": null, "second_hand_price_nis": null, "rent_nis": null}, "5": {"new_build_price_nis": 3484987, "second_hand_price_nis": 3106571, "rent_nis": null}, "6": {"new_build_price_nis": 4003333, "second_hand_price_nis": null, "rent_nis": null}, "דירות מיוחדות": {"new_build_price_nis": null, "second_hand_price_nis": null, "rent_nis": null}, "בתים פרטיים": {"new_build_price_nis": null, "second_hand_price_nis": null, "rent_nis": null}}, "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%A8%D7%A7%D7%99%D7%A1%D7%99%D7%9D-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C", "fetched_at": "2026-06-20T07:20:02.943005+00:00"}], "government_comparisons": [{"area": "נרקיסים", "location": {"requested_label": "נרקיסים, ראשון לציון", "current_id": "67689477", "x": 184122.3824, "y": 651820.2008, "resolution": "verified_seed", "statistical_area_id": "65209882", "statistical_area_name": "צמרות", "boundary_name_mismatch": true}, "summary": {"dataset_version": "28-07-2025", "statistical_area_name": "צמרות", "settlement_name": "ראשון לציון", "settlement_id": 8300, "all_rooms_last_year_avg_price_nis": null, "all_rooms_price_change_pct": null, "five_rooms_last_year_avg_price_nis": null, "latest_neighborhood_period": null, "latest_neighborhood_price_nis": null}, "source_url": "https://data.nadlan.gov.il/api/pages/neighborhood/buy/65209882.json", "usable_neighborhood_price": false}], "source_health": {"nadlan": {"ok": true, "kind": "government_summary"}, "madlan": {"ok": true, "kind": "market_indicator", "areas": {"נוריות": true, "נרקיסים": true}}, "yad2": {"ok": false, "kind": "asking_listings", "reason": "Live real-estate access is blocked by anti-bot controls; yad2-scraper 0.5.3 primarily supports vehicles."}, "nadlan_narkisim": {"ok": true, "kind": "government_summary", "usable_neighborhood_price": false}}, "limitations": ["Individual transaction rows are protected by reCAPTCHA and are not fetched unattended.", "The neighborhood is mapped to Nadlan's legacy statistical area; inspect boundary_name_mismatch.", "Dataset freshness is reported by public_market_summary.dataset_version.", "Public summary prices are not price-per-square-meter estimates and do not automatically overwrite apartment.json valuation."]}, "update_status": {"run_id": "20260620T071959Z", "started_at": "2026-06-20T07:19:59.920948+00:00", "completed_at": "2026-06-20T07:20:03.998245+00:00", "ok": true, "stages": [{"name": "fetch", "ok": true, "exit_code": 0, "duration_seconds": 3.44, "stdout": "🔎 מושך נתוני שוק ציבוריים עבור: נוריות ראשון לציון\n✅ נשמר סיכום שוק רשמי → C:\\Users\\Art\\Documents\\GitHub\\dira-nuriot\\dira-nuriot\\updates\\deals-2026-06-20.json\n   אזור סטטיסטי: מרום ראשון (65209940)\n   גרסת נתונים: 28-07-2025\n   מחיר שכונתי אחרון שפורסם (כל החדרים): 3,997,300 ₪\n⚠️  נוריות ממופה לאזור הסטטיסטי הישן 'מרום ראשון'; אין להסיק שזה גבול שכונה מדויק.\n✅ Madlan נסרק: 6 חד׳ חדש 3,565,909 ₪ · 48 עסקאות בשנה\n✅ Madlan נרקיסים: 6 חד׳ חדש 4,003,333 ₪ · 107 עסקאות בשנה\nℹ️  Yad2 לא שולב: הגנת anti-bot והחבילה שנבדקה אינה מממשת מודל נדל״ן.", "stderr": ""}, {"name": "validate", "ok": true, "exit_code": 0, "duration_seconds": 0.41, "stdout": "Validation passed", "stderr": ""}, {"name": "snapshot", "duration_seconds": 0, "ok": true, "path": "updates\\snapshots\\20260620T071959Z", "files": ["apartment.json", "renovation.json", "management.json", "deals-2026-06-20.json"]}, {"name": "build", "ok": true, "exit_code": 0, "duration_seconds": 0.23, "stdout": "✅ נוצר C:\\Users\\Art\\Documents\\GitHub\\dira-nuriot\\dira-nuriot\\index.html", "stderr": ""}]}, "generated_at": "2026-06-20T10:48:28.179756+00:00"};
+
+const LS = "dira-nuriot-state-v3";
+const LEGACY_LS = "dira-nuriot-state-v2";
+const state = JSON.parse(localStorage.getItem(LS) || localStorage.getItem(LEGACY_LS) || "{}");
+function save(){ localStorage.setItem(LS, JSON.stringify(state)); }
+function nis(n){ return Math.round(n).toLocaleString("he-IL") + " ₪"; }
+function esc(s){ return (s==null?"":(""+s)).replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
+function sizeTag(a){ if(!a) return ""; if(a<6) return '<span class="szt szt-s">קטן</span>'; if(a<=12) return '<span class="szt szt-m">בינוני</span>'; return '<span class="szt szt-l">גדול</span>'; }
+function getSel(k, def){ const v = state["sel_"+k]; return v===undefined ? def : v; }
+
+// ---------- גיבוי וייבוא ----------
+function exportBackup(){
+  const payload={schema_version:1,app:"dira-nuriot",exported_at:new Date().toISOString(),generated_at:DATA.generated_at,state};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="dira-nuriot-backup-"+new Date().toISOString().slice(0,10)+".json"; a.click(); URL.revokeObjectURL(a.href);
+  document.getElementById("backup-msg").textContent="הגיבוי נוצר עם חותמת זמן "+payload.exported_at;
+}
+function importBackup(file){
+  const reader=new FileReader(); reader.onload=()=>{ try{
+    const payload=JSON.parse(reader.result); if(payload.app!=="dira-nuriot"||payload.schema_version!==1||!payload.state) throw new Error("קובץ לא תואם");
+    Object.keys(state).forEach(k=>delete state[k]); Object.assign(state,payload.state); save(); location.reload();
+  }catch(e){ document.getElementById("backup-msg").textContent="ייבוא נכשל: "+e.message; }}; reader.readAsText(file);
+}
+document.getElementById("export-state").addEventListener("click",exportBackup);
+document.getElementById("import-state").addEventListener("change",e=>{if(e.target.files[0]) importBackup(e.target.files[0]);});
+
+// ---------- אפשרויות שיפוץ ----------
+function renderOptions(){
+  const host = document.getElementById("options-list");
+  host.innerHTML = "";
+  DATA.options.forEach(o => {
+    const sel = getSel(o.key, o.default);
+    const diyOn = !!state["diy_"+o.key];
+    const row = document.createElement("div");
+    row.className = "opt";
+    let diyLine = "";
+    if(o.diy){
+      diyLine = '<div class="diyline"><label class="diychk"><input type="checkbox" class="diy" data-key="'+o.key+'" '
+        + (diyOn?"checked":"") + '> לבד 🔧</label>'
+        + '<span class="prodprice">🛒 שוק: '+nis(o.prod_market_min)+'–'+nis(o.prod_market_max)
+        + ' · 📦 עלי: '+nis(o.prod_ali_min)+'–'+nis(o.prod_ali_max)+'</span>'
+        + (o.diy_note?'<div class="note">'+o.diy_note+'</div>':'') + '</div>';
+    }
+    let vb = "";
+    if(o.value==="high") vb='<span class="vb vb-h">📈 מעלה ערך</span>';
+    else if(o.value==="med") vb='<span class="vb vb-m">📈 ערך בינוני</span>';
+    row.innerHTML =
+      '<input type="checkbox" class="optchk" data-key="'+o.key+'" '+(sel?"checked":"")+'>'
+      + '<div><div class="name">'+o.he+(o.essential?'<span class="ess">חובה</span>':'')+vb
+        + '</div><div class="note">'+(o.note||"")+' <span style="color:#64748b">['+o.category+']</span></div>'
+        + diyLine + '</div>'
+      + '<div class="rng">'+nis(o.cost_min)+'–'+nis(o.cost_max)+'</div>'
+      + '<input type="number" class="price" data-key="'+o.key+'" placeholder="'+Math.round((o.cost_min+o.cost_max)/2)+'">';
+    host.appendChild(row);
+  });
+  host.querySelectorAll(".optchk").forEach(c => {
+    c.addEventListener("change", () => { state["sel_"+c.dataset.key]=c.checked; save(); recompute(); });
+  });
+  host.querySelectorAll("input.diy").forEach(c => {
+    c.addEventListener("change", () => { state["diy_"+c.dataset.key]=c.checked; save(); recompute(); });
+  });
+  host.querySelectorAll("input.price").forEach(inp => {
+    const k="price_"+inp.dataset.key;
+    if(state[k]!=null) inp.value=state[k];
+    inp.addEventListener("input", () => { state[k]=inp.value; save(); recompute(); });
+  });
+}
+
+function recompute(){
+  let lo=0, hi=0, planned=0, days=0, savings=0;
+  const pros=new Set(), selected=[];
+  DATA.options.forEach(o => {
+    if(!getSel(o.key, o.default)) return;
+    selected.push(o);
+    lo+=o.cost_min; hi+=o.cost_max; days+=o.days||0;
+    const proMid = Math.round((o.cost_min+o.cost_max)/2);
+    const diyOn = o.diy && !!state["diy_"+o.key];
+    const ov=parseFloat(state["price_"+o.key]);
+    if(diyOn){
+      const aliMid = Math.round((o.prod_ali_min+o.prod_ali_max)/2);
+      const cost = isNaN(ov) ? aliMid : ov;
+      planned += cost;
+      savings += Math.max(0, proMid - cost);
+      // לבד → לא צריך את אנשי המקצוע של הפריט
+    } else {
+      planned += isNaN(ov) ? proMid : ov;
+      (o.pros||[]).forEach(p=>pros.add(p));
+    }
+  });
+  const credit = DATA.kitchen_credit||0;
+  const netPlanned = Math.max(0, planned - credit);
+  document.getElementById("budget-range").textContent = nis(lo)+"–"+nis(hi);
+  document.getElementById("budget-planned").textContent = nis(netPlanned);
+  document.getElementById("budget-savings").textContent = savings>0 ? "−"+nis(savings) : "—";
+  document.getElementById("timeline-days").textContent = days + " ימי עבודה (≈ "+Math.max(1,Math.ceil(days/5))+" שבועות בחפיפה)";
+
+  // אנשי מקצוע נדרשים
+  const ph=document.getElementById("pros-needed"); ph.innerHTML="";
+  if(pros.size===0) ph.innerHTML='<span class="muted">—</span>';
+  pros.forEach(p => { const s=document.createElement("span"); s.className="pill"; s.textContent=DATA.pros[p]||p; ph.appendChild(s); });
+
+  // משימות מצטברות מהאפשרויות שנבחרו
+  const tl=document.getElementById("task-list"); tl.innerHTML="";
+  let total=0, done=0;
+  selected.forEach(o => {
+    (o.tasks||[]).forEach((t,i) => {
+      total++;
+      const id="task_"+o.key+"_"+i;
+      const isDone=!!state[id]; if(isDone) done++;
+      const li=document.createElement("li");
+      li.innerHTML='<label class="'+(isDone?"done":"")+'"><input type="checkbox" '+(isDone?"checked":"")
+        +' data-id="'+id+'"><span class="days">'+o.he.split("—")[0].trim()+'</span> '+t+'</label>';
+      li.querySelector("input").addEventListener("change", e=>{
+        state[id]=e.target.checked; save();
+        e.target.closest("label").classList.toggle("done", e.target.checked);
+        recompute();
+      });
+      tl.appendChild(li);
+    });
+  });
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById("task-pct").textContent = pct+"% ("+done+"/"+total+")";
+  document.getElementById("task-bar").style.width = pct+"%";
+}
+
+// ---------- תשלומים ----------
+function recalcPayments(){
+  const base=DATA.index_base||0;
+  let cur=parseFloat(state.index_cur); if(isNaN(cur)||!base) cur=base;
+  const factor = base ? cur/base : 1;
+  let paid=0, remaining=0, extra=0; let nextEl=null;
+  document.querySelectorAll(".paychk").forEach(c => {
+    const amt=parseFloat(c.dataset.amt)||0;
+    const indexed = c.dataset.indexed==="1";
+    const eff = indexed ? amt*factor : amt;
+    if(indexed) extra += eff-amt;
+    const cell=c.closest("tr").querySelector(".amt-cell");
+    if(cell) cell.textContent = nis(eff) + (indexed?" 🔗":"");
+    if(c.checked){ paid+=eff; c.closest("tr").querySelector(".paid-cell").innerHTML='<span class="paid-yes">✓ שולם</span>'; }
+    else { remaining+=eff; c.closest("tr").querySelector(".paid-cell").innerHTML='<span class="paid-no">ממתין</span>';
+           if(!nextEl) nextEl=c; }
+  });
+  document.getElementById("paid-total").textContent=nis(paid);
+  document.getElementById("remaining-total").textContent=nis(remaining);
+  const ie=document.getElementById("index-extra"); if(ie) ie.textContent=(extra>0?"+":"")+nis(extra);
+  const nb=document.getElementById("next-payment");
+  if(nextEl){ const amt=parseFloat(nextEl.dataset.amt)||0; const eff=nextEl.dataset.indexed==="1"?amt*factor:amt;
+    nb.style.display="block";
+    nb.innerHTML='⏭️ התשלום הבא: <b>'+nextEl.dataset.date+'</b> · '+nis(eff); }
+  else nb.style.display="none";
+}
+document.querySelectorAll(".paychk").forEach(c=>{
+  const k="paid_"+c.dataset.date;
+  if(state[k]!==undefined) c.checked=state[k];
+  c.addEventListener("change",()=>{ state[k]=c.checked; save(); recalcPayments(); });
+});
+(function(){ const ii=document.getElementById("index-input");
+  if(ii){ if(state.index_cur!=null) ii.value=state.index_cur;
+    ii.addEventListener("input",()=>{ state.index_cur=ii.value; save(); recalcPayments(); }); } })();
+
+// ---------- גאנט-רפרנס ----------
+document.querySelectorAll("input.gtask").forEach(c=>{
+  const k="g_"+c.dataset.id;
+  if(state[k]){ c.checked=true; c.closest("li").classList.add("done"); }
+  c.addEventListener("change",()=>{ state[k]=c.checked; save(); c.closest("li").classList.toggle("done",c.checked); });
+});
+
+// ---------- דברים לביצוע ----------
+document.querySelectorAll("input.action").forEach(c=>{
+  const k="a_"+c.dataset.id;
+  if(state[k]){ c.checked=true; c.closest("li").classList.add("done"); }
+  c.addEventListener("change",()=>{ state[k]=c.checked; save(); c.closest("li").classList.toggle("done",c.checked); });
+});
+
+// ---------- בדק בית צ'קליסט ----------
+function recalcHand(){
+  const all=document.querySelectorAll("input.handcheck");
+  const done=[...all].filter(c=>c.checked).length;
+  const pct=all.length?Math.round(done/all.length*100):0;
+  const p=document.getElementById("hand-pct"), b=document.getElementById("hand-bar");
+  if(p) p.textContent=pct+"% ("+done+"/"+all.length+")";
+  if(b) b.style.width=pct+"%";
+}
+document.querySelectorAll("input.handcheck").forEach(c=>{
+  const k="hand_"+c.dataset.id;
+  if(state[k]){ c.checked=true; c.closest("li").classList.add("done"); }
+  c.addEventListener("change",()=>{ state[k]=c.checked; save();
+    c.closest("li").classList.toggle("done",c.checked); recalcHand(); });
+});
+recalcHand();
+
+// ---------- ספקים (טבלה נערכת) ----------
+function saveRows(key, table){
+  const rows=[...table.querySelectorAll("tr.datarow")].map(tr=>{
+    const o={};
+    tr.querySelectorAll("[data-f]").forEach(el=>{ o[el.dataset.f]= el.type==="checkbox"?el.checked:el.value; });
+    return o;
+  });
+  state[key]=rows; save();
+}
+function addSupplierRow(table, d){
+  d=d||{};
+  const tr=document.createElement("tr"); tr.className="datarow";
+  tr.innerHTML='<td><input class="cell" data-f="name" value="'+esc(d.name)+'"></td>'
+    +'<td><input class="cell" data-f="trade" value="'+esc(d.trade)+'" list="trades"></td>'
+    +'<td><input class="cell" data-f="phone" value="'+esc(d.phone)+'"></td>'
+    +'<td><input class="cell" data-f="quote" type="number" value="'+esc(d.quote)+'"></td>'
+    +'<td><input class="cell" data-f="status" value="'+esc(d.status)+'" placeholder="הצעה/נבחר"></td>'
+    +'<td><button class="delbtn">✕</button></td>';
+  table.appendChild(tr);
+  tr.querySelectorAll("input").forEach(i=>i.addEventListener("input",()=>saveRows("suppliers",table)));
+  tr.querySelector(".delbtn").addEventListener("click",()=>{ tr.remove(); saveRows("suppliers",table); });
+}
+(function(){ const t=document.getElementById("suppliers-table");
+  let dl=document.createElement("datalist"); dl.id="trades";
+  (DATA.pros_seed||[]).forEach(p=>{ const o=document.createElement("option"); o.value=p; dl.appendChild(o); });
+  document.body.appendChild(dl);
+  const saved=state.suppliers||[];
+  if(saved.length) saved.forEach(d=>addSupplierRow(t,d)); else addSupplierRow(t,{});
+  document.getElementById("add-supplier").addEventListener("click",()=>addSupplierRow(t,{}));
+})();
+
+// ---------- רשימת קניות ----------
+function addShopRow(table, d){
+  d=d||{};
+  const tr=document.createElement("tr"); tr.className="datarow";
+  tr.innerHTML='<td><input class="cell" data-f="item" value="'+esc(d.item)+'"></td>'
+    +'<td><input class="cell" data-f="link" value="'+esc(d.link)+'" placeholder="https://"></td>'
+    +'<td><input class="cell" data-f="price" type="number" value="'+esc(d.price)+'"></td>'
+    +'<td style="text-align:center"><input type="checkbox" data-f="ordered" '+(d.ordered?"checked":"")+'></td>'
+    +'<td><button class="delbtn">✕</button></td>';
+  table.appendChild(tr);
+  tr.querySelectorAll("input").forEach(i=>i.addEventListener(i.type==="checkbox"?"change":"input",()=>saveRows("shop",table)));
+  tr.querySelector(".delbtn").addEventListener("click",()=>{ tr.remove(); saveRows("shop",table); });
+}
+(function(){ const t=document.getElementById("shop-table");
+  const saved=state.shop;
+  if(saved && saved.length) saved.forEach(d=>addShopRow(t,d));
+  else (DATA.shopping_seed||[]).forEach(it=>addShopRow(t,{item:it}));
+  document.getElementById("add-shop").addEventListener("click",()=>addShopRow(t,{}));
+})();
+
+// ---------- מעקב שווי ----------
+function fmtM(v){ return (v/1000000).toFixed(2)+"M ₪"; }
+function renderValueChart(){
+  const rows=[...document.querySelectorAll("#value-table tr.datarow")].map(tr=>({
+    date: tr.querySelector("[data-f=date]").value,
+    value: parseFloat(tr.querySelector("[data-f=value]").value)||0,
+    note: tr.querySelector("[data-f=note]").value
+  })).filter(r=>r.value>0);
+  const host=document.getElementById("value-chart"); if(!host) return; host.innerHTML="";
+  const tr=document.getElementById("value-trend"); if(tr) tr.innerHTML="";
+  if(!rows.length) return;
+  const max=Math.max(...rows.map(r=>r.value)), min=Math.min(...rows.map(r=>r.value));
+  // קנה מידה: בסיס מעט מתחת למינימום כדי שההבדלים יבלטו
+  const base=Math.max(0, min-(max-min)*0.4||min*0.9);
+  let h='<div class="vchart">';
+  rows.forEach(r=>{ const ht=Math.round((r.value-base)/(max-base||1)*100);
+    h+='<div class="vbar"><div class="vbar-fill" style="height:'+Math.max(6,ht)+'%"><span class="vbar-amt">'+fmtM(r.value)+'</span></div>'
+      +'<div class="vbar-lbl"><b>'+(r.date||"")+'</b>'+(r.note||"")+'</div></div>'; });
+  h+='</div>'; host.innerHTML=h;
+  if(tr && rows.length>=2){
+    const first=rows[0].value, last=rows[rows.length-1].value;
+    const diff=last-first, pct=Math.round(diff/first*100);
+    const up=diff>=0; const col=up?"#22c55e":"#f87171"; const arr=up?"▲":"▼";
+    tr.innerHTML='מגמה: <span style="color:'+col+'">'+arr+' '+(up?"+":"")+fmtM(diff)+' ('+(up?"+":"")+pct+'%)</span> '
+      +'<span style="color:var(--muted);font-weight:400">מאז '+(rows[0].date||"")+'</span>';
+  }
+}
+function addValueRow(table,d){ d=d||{};
+  const tr=document.createElement("tr"); tr.className="datarow";
+  tr.innerHTML='<td><input class="cell" data-f="date" value="'+esc(d.date)+'" placeholder="2026-06"></td>'
+    +'<td><input class="cell" data-f="value" type="number" value="'+esc(d.value)+'"></td>'
+    +'<td><input class="cell" data-f="note" value="'+esc(d.note)+'"></td>'
+    +'<td><button class="delbtn">✕</button></td>';
+  table.appendChild(tr);
+  tr.querySelectorAll("input").forEach(i=>i.addEventListener("input",()=>{saveRows("valuations",table);renderValueChart();}));
+  tr.querySelector(".delbtn").addEventListener("click",()=>{tr.remove();saveRows("valuations",table);renderValueChart();});
+}
+(function(){ const t=document.getElementById("value-table");
+  const saved=state.valuations;
+  if(saved && saved.length) saved.forEach(d=>addValueRow(t,d));
+  else (DATA.value_seed||[]).forEach(d=>addValueRow(t,d));
+  document.getElementById("add-value").addEventListener("click",()=>{addValueRow(t,{});});
+  renderValueChart();
+})();
+
+// ---------- מודל שווי + נכסים להשוואה ----------
+function renderValuationModel(){
+  const cfg=DATA.management.valuation_model||{};
+  const baseInput=document.getElementById("valuation-base");
+  if(state.valuation_base==null) state.valuation_base=cfg.base_value_nis||0;
+  baseInput.value=state.valuation_base;
+  const host=document.getElementById("valuation-adjustments"); host.innerHTML="";
+  let totalPct=0;
+  (cfg.adjustments||[]).forEach(a=>{
+    const key="valuation_adj_"+a.key; if(state[key]==null) state[key]=a.pct; const pct=parseFloat(state[key])||0; totalPct+=pct;
+    const row=document.createElement("div"); row.className="status-line";
+    row.innerHTML='<span><b>'+esc(a.label)+'</b><span class="note">'+esc(a.reason||"")+'</span></span><input class="price" type="number" step="0.1" value="'+pct+'" aria-label="'+esc(a.label)+'">';
+    row.querySelector("input").addEventListener("input",e=>{state[key]=e.target.value;save();renderValuationModel();}); host.appendChild(row);
+  });
+  const adjusted=(parseFloat(state.valuation_base)||0)*(1+totalPct/100);
+  document.getElementById("valuation-adjusted").textContent=nis(adjusted);
+  document.getElementById("valuation-total-pct").textContent=(totalPct>=0?"+":"")+totalPct.toFixed(1)+"%";
+  const scenarios=document.getElementById("valuation-scenarios"); scenarios.innerHTML="";
+  (cfg.scenarios||[]).forEach(s=>{const el=document.createElement("div");el.className="scenario";el.innerHTML='<span>'+esc(s.label)+'</span><strong>'+nis(adjusted*s.multiplier)+'</strong><span class="note">×'+s.multiplier+'</span>';scenarios.appendChild(el);});
+  save();
+}
+document.getElementById("valuation-base").addEventListener("input",e=>{state.valuation_base=e.target.value;save();renderValuationModel();});
+
+function addCompRow(table,d){ d=d||{}; const tr=document.createElement("tr");tr.className="datarow";
+  tr.innerHTML='<td><input class="cell" data-f="date" value="'+esc(d.date)+'"></td><td><input class="cell" data-f="address" value="'+esc(d.address)+'"></td>'
+    +'<td><input class="cell" data-f="rooms" type="number" value="'+esc(d.rooms)+'"></td><td><input class="cell" data-f="area_sqm" type="number" value="'+esc(d.area_sqm)+'"></td>'
+    +'<td><input class="cell" data-f="price_nis" type="number" value="'+esc(d.price_nis)+'"></td><td class="num ppsqm">—</td>'
+    +'<td><input class="cell" data-f="kind" value="'+esc(d.kind)+'"></td><td><input class="cell" data-f="confidence" value="'+esc(d.confidence)+'"></td>'
+    +'<td><input class="cell" data-f="source_url" value="'+esc(d.source_url)+'" placeholder="https://"></td><td><button class="delbtn">✕</button></td>';
+  table.appendChild(tr); const update=()=>{const p=parseFloat(tr.querySelector('[data-f=price_nis]').value),a=parseFloat(tr.querySelector('[data-f=area_sqm]').value);tr.querySelector('.ppsqm').textContent=p&&a?nis(p/a):"—";saveRows("comparables",table);renderCompStats();};
+  tr.querySelectorAll("input").forEach(i=>i.addEventListener("input",update));tr.querySelector(".delbtn").addEventListener("click",()=>{tr.remove();saveRows("comparables",table);renderCompStats();});update();
+}
+function renderCompStats(){const rows=[...document.querySelectorAll('#comparables-table tr.datarow')].map(tr=>{const p=parseFloat(tr.querySelector('[data-f=price_nis]').value),a=parseFloat(tr.querySelector('[data-f=area_sqm]').value);return p&&a?p/a:null}).filter(Boolean);const avg=rows.length?rows.reduce((x,y)=>x+y,0)/rows.length:0;document.getElementById('comp-count').textContent=rows.length;document.getElementById('comp-avg').textContent=avg?nis(avg)+"/מ״ר":"—";}
+(function(){const t=document.getElementById("comparables-table"),seed=state.comparables||DATA.management.comparables||[];seed.forEach(d=>addCompRow(t,d));document.getElementById("add-comp").addEventListener("click",()=>addCompRow(t,{}));renderValuationModel();renderCompStats();})();
+
+// ---------- תחזית תזרים ----------
+function renderCashFlow(){
+  const cfg=DATA.management.cash_flow||{}; ["available_cash_nis","monthly_contribution_nis","contingency_pct","renovation_target_nis"].forEach(k=>{if(state["cash_"+k]==null)state["cash_"+k]=cfg[k]||0;const el=document.getElementById("cash-"+k);el.value=state["cash_"+k];});
+  const base=DATA.index_base||0,cur=parseFloat(state.index_cur)||base,factor=base?cur/base:1;
+  let remaining=0; (DATA.payments||[]).forEach(p=>{const paid=state["paid_"+p.date]===undefined?p.paid:state["paid_"+p.date];if(!paid)remaining+=p.amount_incl_vat*(p.indexed?factor:1);});
+  const reno=parseFloat(state.cash_renovation_target_nis)||0,cont=parseFloat(state.cash_contingency_pct)||0,available=parseFloat(state.cash_available_cash_nis)||0,monthly=parseFloat(state.cash_monthly_contribution_nis)||0;
+  const required=remaining+reno*(1+cont/100),gap=Math.max(0,required-available);const last=DATA.payments.length?new Date(DATA.payments[DATA.payments.length-1].date):new Date();const months=Math.max(1,Math.ceil((last-new Date())/(1000*60*60*24*30.44)));const projected=available+monthly*months;
+  document.getElementById("cash-remaining").textContent=nis(remaining);document.getElementById("cash-required").textContent=nis(required);document.getElementById("cash-gap").textContent=nis(gap);document.getElementById("cash-months").textContent=months;document.getElementById("cash-projected").textContent=nis(projected);document.getElementById("cash-monthly-needed").textContent=nis(gap/months);document.getElementById("cash-status").innerHTML=projected>=required?'<span class="badge badge-ok">ממומן לפי ההנחות</span>':'<span class="badge badge-warn">פער מימון '+nis(required-projected)+'</span>';save();
+}
+["available_cash_nis","monthly_contribution_nis","contingency_pct","renovation_target_nis"].forEach(k=>document.getElementById("cash-"+k).addEventListener("input",e=>{state["cash_"+k]=e.target.value;renderCashFlow();}));
+
+// ---------- מעקב שיפוץ בפועל ----------
+function addRenoRow(table,d){d=d||{};const tr=document.createElement("tr");tr.className="datarow";tr.innerHTML='<td><input class="cell" data-f="item" value="'+esc(d.item)+'"></td><td><input class="cell" data-f="budget" type="number" value="'+esc(d.budget)+'"></td><td><input class="cell" data-f="quote" type="number" value="'+esc(d.quote)+'"></td><td><input class="cell" data-f="supplier" value="'+esc(d.supplier)+'"></td><td><input class="cell" data-f="deposit" type="number" value="'+esc(d.deposit)+'"></td><td><input class="cell" data-f="paid" type="number" value="'+esc(d.paid)+'"></td><td><input class="cell" data-f="status" value="'+esc(d.status)+'" placeholder="מתוכנן/הוזמן/הושלם"></td><td class="num variance">—</td><td><button class="delbtn">✕</button></td>';table.appendChild(tr);const update=()=>{const b=parseFloat(tr.querySelector('[data-f=budget]').value)||0,q=parseFloat(tr.querySelector('[data-f=quote]').value)||0;tr.querySelector('.variance').textContent=(q?nis(q-b):"—");saveRows("renovation_tracking",table);renderRenoTotals();};tr.querySelectorAll("input").forEach(i=>i.addEventListener("input",update));tr.querySelector('.delbtn').addEventListener('click',()=>{tr.remove();saveRows("renovation_tracking",table);renderRenoTotals();});update();}
+function renderRenoTotals(){let budget=0,committed=0,paid=0;document.querySelectorAll('#reno-track-table tr.datarow').forEach(tr=>{budget+=parseFloat(tr.querySelector('[data-f=budget]').value)||0;committed+=parseFloat(tr.querySelector('[data-f=quote]').value)||0;paid+=parseFloat(tr.querySelector('[data-f=paid]').value)||0;});document.getElementById('reno-budget-total').textContent=nis(budget);document.getElementById('reno-committed-total').textContent=nis(committed);document.getElementById('reno-paid-total').textContent=nis(paid);document.getElementById('reno-variance-total').textContent=nis(committed-budget);}
+(function(){const t=document.getElementById('reno-track-table');let rows=state.renovation_tracking||DATA.management.renovation_tracking||[];if(!rows.length)rows=(DATA.options||[]).filter(o=>o.default).map(o=>({item:o.he,budget:Math.round((o.cost_min+o.cost_max)/2),status:'מתוכנן'}));rows.forEach(d=>addRenoRow(t,d));document.getElementById('add-reno-track').addEventListener('click',()=>addRenoRow(t,{}));})();
+
+// ---------- ליקויי מסירה ----------
+function addDefectRow(table,d){d=d||{};const tr=document.createElement('tr');tr.className='datarow';tr.innerHTML='<td><input class="cell" data-f="date" value="'+esc(d.date)+'"></td><td><input class="cell" data-f="area" value="'+esc(d.area)+'"></td><td><input class="cell" data-f="description" value="'+esc(d.description)+'"></td><td><input class="cell" data-f="severity" value="'+esc(d.severity)+'" placeholder="נמוכה/בינונית/קריטית"></td><td><input class="cell" data-f="responsible" value="'+esc(d.responsible)+'"></td><td><input class="cell" data-f="due" value="'+esc(d.due)+'"></td><td><input class="cell" data-f="status" value="'+esc(d.status)+'" placeholder="פתוח/בטיפול/נסגר"></td><td><input class="cell" data-f="photo" value="'+esc(d.photo)+'" placeholder="קישור/שם קובץ"></td><td><button class="delbtn">✕</button></td>';table.appendChild(tr);tr.querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>{saveRows('defects',table);renderDefectStats();}));tr.querySelector('.delbtn').addEventListener('click',()=>{tr.remove();saveRows('defects',table);renderDefectStats();});}
+function renderDefectStats(){const rows=[...document.querySelectorAll('#defects-table tr.datarow')],open=rows.filter(tr=>!['נסגר','סגור'].includes(tr.querySelector('[data-f=status]').value.trim())).length,critical=rows.filter(tr=>tr.querySelector('[data-f=severity]').value.includes('קריט')).length;document.getElementById('defect-open').textContent=open;document.getElementById('defect-critical').textContent=critical;}
+(function(){const t=document.getElementById('defects-table'),rows=state.defects||DATA.management.defects||[];rows.forEach(d=>addDefectRow(t,d));document.getElementById('add-defect').addEventListener('click',()=>addDefectRow(t,{date:new Date().toISOString().slice(0,10),status:'פתוח'}));renderDefectStats();})();
+
+// ---------- מידות חדרים ----------
+function addRoomRow(table,d){ d=d||{};
+  const tr=document.createElement("tr"); tr.className="datarow";
+  const a=(parseFloat(d.len)*parseFloat(d.wid));
+  tr.innerHTML='<td><input class="cell" data-f="room" value="'+esc(d.room)+'"></td>'
+    +'<td><input class="cell" data-f="len" type="number" step="0.01" value="'+esc(d.len)+'"></td>'
+    +'<td><input class="cell" data-f="wid" type="number" step="0.01" value="'+esc(d.wid)+'"></td>'
+    +'<td class="area-cell">'+(a?a.toFixed(1)+" "+sizeTag(a):"—")+'</td>'
+    +'<td><button class="delbtn">✕</button></td>';
+  table.appendChild(tr);
+  function upd(){ const l=parseFloat(tr.querySelector("[data-f=len]").value), w=parseFloat(tr.querySelector("[data-f=wid]").value);
+    const ar=(l&&w)?l*w:0; tr.querySelector(".area-cell").innerHTML=ar?ar.toFixed(1)+" "+sizeTag(ar):"—"; saveRows("rooms",table); }
+  tr.querySelectorAll("input").forEach(i=>i.addEventListener("input",upd));
+  tr.querySelector(".delbtn").addEventListener("click",()=>{tr.remove();saveRows("rooms",table);});
+}
+(function(){ const t=document.getElementById("rooms-table");
+  const saved=state.rooms;
+  if(saved && saved.length) saved.forEach(d=>addRoomRow(t,d));
+  else (DATA.rooms_seed||[]).forEach(d=>addRoomRow(t, typeof d==="string"?{room:d}:d));
+  document.getElementById("add-room").addEventListener("click",()=>{addRoomRow(t,{});});
+})();
+
+// ---------- קיפול נושאים ----------
+const sections=[...document.querySelectorAll("section")];
+const toggles=[];
+sections.forEach((sec,i)=>{
+  const h2=sec.querySelector("h2"); if(!h2) return;
+  const rest=[...sec.children].filter(el=>el!==h2);
+  const ind=document.createElement("span"); ind.className="toggle-ind"; h2.prepend(ind);
+  const key="collapsed_"+i;
+  function apply(c){ rest.forEach(el=>el.style.display=c?"none":""); ind.textContent=c?"▸":"▾"; }
+  let c=!!state[key]; apply(c);
+  h2.addEventListener("click",()=>{ c=!c; state[key]=c; save(); apply(c); });
+  toggles.push((c)=>{ state[key]=c; apply(c); });
+});
+function setAll(c){ sections.forEach((sec,i)=>{ state["collapsed_"+i]=c; }); save();
+  toggles.forEach(t=>t(c)); }
+const ea=document.getElementById("expand-all"); if(ea) ea.addEventListener("click",()=>setAll(false));
+const ca=document.getElementById("collapse-all"); if(ca) ca.addEventListener("click",()=>setAll(true));
+
+renderOptions();
+recompute();
+recalcPayments();
+renderCashFlow();
+
+</script>
+</body>
+</html>
