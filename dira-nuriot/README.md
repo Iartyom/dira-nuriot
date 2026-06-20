@@ -6,21 +6,19 @@
 
 ## 🌐 פרסום ב-GitHub Pages
 
-האתר מתפרסם מהתיקייה `dira-nuriot/` באמצעות
-`.github/workflows/pages.yml`.
+האתר מתפרסם מהענף `main` ומתיקיית השורש. קובץ `index.html` בשורש מפנה ללוח
+שנמצא בתיקייה `dira-nuriot/`.
 
 הגדרה חד-פעמית:
 
 1. דוחפים את המאגר ל-GitHub כאשר `main` (או `master`) הוא ענף ברירת המחדל.
-2. ב-GitHub פותחים **Settings → Pages → Build and deployment** ובוחרים
-   **GitHub Actions** תחת **Source**.
-3. פותחים **Actions → Deploy dashboard to GitHub Pages → Run workflow**
-   כדי לבצע פרסום ורענון נתונים ראשונים.
+2. ב-GitHub פותחים **Settings → Pages → Build and deployment**, בוחרים
+   **Deploy from a branch**, ואז `main` ו-`/(root)`.
+3. כל push לענף `main` מפרסם את האתר. אפשר להריץ את
+   **Actions → Refresh dashboard data** כדי לרענן את נתוני השוק.
 
-לאחר מכן כל push מפרסם אוטומטית. ריצה מתוזמנת מרעננת את מקורות השוק ומפרסמת
-גרסה חדשה בכל יום שני. כתובת האתר תופיע ב-**Settings → Pages** ובמשימת `deploy`.
-לפרסום מועלים רק `index.html` ו-`photo.jpg`; קובצי המקור, ה-PDF וה-snapshots אינם
-נכללים באתר הציבורי.
+ריצה מתוזמנת מרעננת את מקורות השוק ושומרת את לוח הנתונים המעודכן בכל יום שני.
+קובץ ה-PDF הפרטי, קובצי state מקומיים, raw captures ו-snapshots אינם ב-Git.
 
 ---
 
