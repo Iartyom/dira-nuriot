@@ -74,4 +74,31 @@ def test_extract_public_summary():
 def test_default_query_has_verified_location_seed():
     seed = fetch_mod.KNOWN_LOCATIONS[fetch_mod.DEFAULT_QUERY]
     assert seed["current_id"] == "67689667"
+    assert seed["statistical_area_id"] == "65209940"
     assert seed["resolution"] == "verified_seed"
+
+
+def test_resolve_neighborhood_falls_back_to_seed_when_endpoints_return_html(monkeypatch):
+    # Every public endpoint answers with an HTML challenge (ValueError). The resolver
+    # must still succeed for the default query using the verified project seed.
+    def html_response(*args, **kwargs):
+        raise ValueError("Expected JSON but received HTML")
+
+    monkeypatch.setattr(fetch_mod, "_get_json", html_response)
+    location = fetch_mod.resolve_neighborhood(fetch_mod.DEFAULT_QUERY)
+    assert location["current_id"] == "67689667"
+    assert location["statistical_area_id"] == "65209940"
+    assert location["resolution"] == "seed_statistical_area"
+
+
+def test_resolve_neighborhood_raises_without_seed(monkeypatch):
+    # An unknown query with no seed and dead endpoints must fail loudly, not silently.
+    def html_response(*args, **kwargs):
+        raise ValueError("Expected JSON but received HTML")
+
+    monkeypatch.setattr(fetch_mod, "_get_json", html_response)
+    try:
+        fetch_mod.resolve_neighborhood("שכונה לא מוכרת עיר לא מוכרת")
+    except ValueError:
+        return
+    raise AssertionError("expected ValueError for an unknown query with dead endpoints")

@@ -42,6 +42,7 @@ KNOWN_LOCATIONS = {
     "נוריות ראשון לציון": {
         "requested_label": "נוריות, ראשון לציון",
         "current_id": "67689667",
+        "statistical_area_id": "65209940",
         "x": 184121.2095,
         "y": 652607.6766,
         "resolution": "verified_seed",
@@ -100,26 +101,48 @@ def _pick_neighborhood(search_response):
     }
 
 
+# Any of the public endpoints can intermittently answer with an HTML challenge/SPA
+# page instead of JSON (raising ValueError) or be unreachable (URLError). Treat all of
+# these as "endpoint unavailable" so we can fall back to the verified project seed.
+FETCH_ERRORS = (
+    urllib.error.URLError,
+    urllib.error.HTTPError,
+    TimeoutError,
+    ValueError,
+    json.JSONDecodeError,
+)
+
+
 def resolve_neighborhood(query, data_base=DEFAULT_DATA_BASE):
     params = urllib.parse.urlencode({"query": query, "lyrs": 4, "gid": "nadlan"})
+    seed = KNOWN_LOCATIONS.get(" ".join(query.split()))
     try:
         search = _get_json(f"{GOVMAP_DETAILS}?{params}", "govmap-neighborhood")
         location = _pick_neighborhood(search)
         location["resolution"] = "govmap_live"
-    except urllib.error.URLError:
-        seed = KNOWN_LOCATIONS.get(" ".join(query.split()))
+    except FETCH_ERRORS:
         if not seed:
             raise
         location = dict(seed)
 
-    index = _get_json(f"{data_base}/index/neigh.json")
-    mapping = index.get(location["current_id"])
-    if not isinstance(mapping, dict) or not mapping.get("UNIQ_ID_OLD"):
+    # Map the current neighborhood id to Nadlan's legacy statistical-area id.
+    mapping = None
+    try:
+        index = _get_json(f"{data_base}/index/neigh.json")
+        mapping = index.get(location["current_id"])
+    except FETCH_ERRORS:
+        mapping = None
+    if isinstance(mapping, dict) and mapping.get("UNIQ_ID_OLD"):
+        location["statistical_area_id"] = str(mapping["UNIQ_ID_OLD"])
+    elif seed and seed.get("statistical_area_id"):
+        # Live index unavailable — use the verified seed's known mapping as a last resort.
+        location["statistical_area_id"] = str(seed["statistical_area_id"])
+        location["resolution"] = "seed_statistical_area"
+    else:
         raise ValueError(
             f"Nadlan has no legacy statistical-area mapping for neighborhood "
             f"{location['current_id']}"
         )
-    location["statistical_area_id"] = str(mapping["UNIQ_ID_OLD"])
     return location
 
 
@@ -157,7 +180,14 @@ def extract_public_summary(page):
 
 
 def fetch_public_market_data(query):
-    config = _get_json(NADLAN_CONFIG, "nadlan-config")
+    # config.json only supplies the S3 base URLs; it is periodically served as an HTML
+    # challenge/SPA fallback instead of JSON. Treat it as optional and fall back to the
+    # known public bases so a flaky config endpoint does not sink the whole fetch.
+    try:
+        config = _get_json(NADLAN_CONFIG, "nadlan-config")
+    except FETCH_ERRORS as error:
+        print(f"ℹ️  config.json לא זמין כ-JSON ({error}); ממשיך עם כתובות ברירת המחדל של Nadlan.", file=sys.stderr)
+        config = {}
     data_base = config.get("s3_url_base") or DEFAULT_DATA_BASE
     page_base = config.get("s3_page_base") or f"{data_base}/pages"
     location = resolve_neighborhood(query, data_base)
