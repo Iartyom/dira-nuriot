@@ -8,7 +8,9 @@
     "city": "ראשון לציון",
     "city_en": "Rishon LeZion",
     "spec_pdf_url": "https://nuriot.o-aharon.co.il/data/pdf/128/128A5.pdf",
-    "project_site": "https://nuriot.o-aharon.co.il"
+    "project_site": "https://nuriot.o-aharon.co.il",
+    "repo_url": "https://github.com/Iartyom/dira-nuriot",
+    "refresh_workflow_url": "https://github.com/Iartyom/dira-nuriot/actions/workflows/refresh-data.yml"
   },
   "unit": {
     "rooms": 6,
@@ -42,6 +44,22 @@
     "price_nis": 2450000,
     "price_per_sqm_paid": 16897,
     "expected_handover": "~רבעון 3 2028 (תשלום אחרון 30/09/28)"
+  },
+  "documents": {
+    "_comment": "מיקום, תוכניות ומסמכים רשמיים. מוצג בסקשן '📍 מיקום, תוכניות ומסמכים רשמיים'. 128A5.pdf מקומי בלבד (מסונן ב-.gitignore) — ההטמעה עובדת מקומית, ובאתר יש fallback לקישור המרוחק.",
+    "apartment_plan_pdf_local": "128A5.pdf",
+    "apartment_plan_pdf_url": "https://nuriot.o-aharon.co.il/data/pdf/128/128A5.pdf",
+    "building_plan_pdf_url": "https://archive.gis-net.co.il/Rishon/files/Scan/4237/129/202108178010.pdf",
+    "building_plan_note": "סריקת תיק בניין (~38MB) — נפתחת באתר gis-net, לא מורדת לריפו.",
+    "city_gis_url": "https://v5.gis-net.co.il/v5/rishonlezion?extent=183630,652257,184706,652768&layers=105,101,233&back=ortho&year=2026&overview=0&opacity=0.9",
+    "cityhall_building_url": "https://www.rishonlezion.muni.il/Residents/Construction/newengine/Pages/request2.aspx#request/20210817",
+    "cityhall_request_id": "20210817",
+    "location_map_image": "assets/location-map.png",
+    "map_lat": 31.965129,
+    "map_lon": 34.831139,
+    "map_zoom": 18,
+    "map_bbox": "34.825458,31.962808,34.836821,31.96745",
+    "map_note": "חלון מפה חי = תצ״א/לוויין עדכני (Google hybrid, דורש אינטרנט). מפת gis-net העירונית (תצ״א רשמית 2026 + שכבות) חוסמת הטמעה (X-Frame-Options: DENY) ולכן נפתחת בכפתור. הקואורדינטות הומרו מ-ITM extent של ה-deep-link."
   },
   "constraints": {
     "_comment": "אילוצים שמכתיבים את כל תכנון השיפוץ.",

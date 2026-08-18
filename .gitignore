@@ -37,6 +37,8 @@ secrets.json
 # Personal browser/app state must stay out of a public repository
 user-state.json
 *-user-state.json
+private/
+*.private.json
 
 # Build outputs
 dist/

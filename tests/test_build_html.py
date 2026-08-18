@@ -23,3 +23,22 @@ def test_build_contains_management_modules():
     ]
     for marker in required:
         assert marker in html
+
+
+def test_build_contains_new_features():
+    build.main()
+    with open(os.path.join(APP, 'index.html'), encoding='utf-8') as handle:
+        html = handle.read()
+    # KPI hero, section nav, staleness banner, documents section, refresh + map
+    required = [
+        'class="hero"',
+        'hero-handover',
+        'secnav',                # sticky section nav (CSS + JS)
+        'class="stale ',         # valuation freshness banner
+        'מיקום, תוכניות ומסמכים רשמיים',
+        'maps.google.com',       # embedded ortho window
+        'actions/workflows/refresh-data.yml',  # update button
+        '@media print',
+    ]
+    for marker in required:
+        assert marker in html, marker

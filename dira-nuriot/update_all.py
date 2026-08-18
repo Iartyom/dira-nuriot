@@ -52,17 +52,29 @@ def main():
     os.makedirs(UPDATES, exist_ok=True)
     now = datetime.datetime.now(datetime.timezone.utc)
     stamp = now.strftime("%Y%m%dT%H%M%SZ")
-    stages = [
-        run_stage("fetch", [sys.executable, "fetch_deals.py"]),
-        run_stage("validate", [sys.executable, "validate_data.py", "--strict"]),
-    ]
-    stages.append({"name": "snapshot", "duration_seconds": 0, **snapshot(stamp)})
-    stages.append(run_stage("build", [sys.executable, "build_html.py"]))
+
+    # Market fetch is best-effort: individual endpoints are protected by reCAPTCHA /
+    # anti-bot and GovMap's TLS is flaky on some runners. A failed fetch must NOT fail
+    # the workflow or wipe the last-good dashboard — deals-*.json is git-ignored, so on a
+    # fresh CI checkout there is no market data to rebuild from. When fetch fails we keep
+    # the previously committed index.html untouched and exit cleanly.
+    fetch_stage = run_stage("fetch", [sys.executable, "fetch_deals.py"])
+    stages = [fetch_stage]
+    fetch_ok = fetch_stage.get("ok")
+    if fetch_ok:
+        stages.append(run_stage("validate", [sys.executable, "validate_data.py", "--strict"]))
+        stages.append({"name": "snapshot", "duration_seconds": 0, **snapshot(stamp)})
+        stages.append(run_stage("build", [sys.executable, "build_html.py"]))
+
+    # Only the ability to rebuild a valid dashboard is critical for the exit code.
+    critical_ok = all(s.get("ok", True) for s in stages if s["name"] in ("validate", "build"))
     status = {
         "run_id": stamp,
         "started_at": now.isoformat(),
         "completed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "ok": all(stage.get("ok") for stage in stages),
+        "fetch_ok": bool(fetch_ok),
+        "rebuilt": bool(fetch_ok),
         "stages": stages,
     }
     with open(STATUS_PATH, "w", encoding="utf-8") as handle:
@@ -77,8 +89,10 @@ def main():
     history.append({"run_id": stamp, "completed_at": status["completed_at"], "ok": status["ok"], "stages": [{"name": s["name"], "ok": s.get("ok"), "duration_seconds": s.get("duration_seconds", 0)} for s in stages]})
     with open(HISTORY_PATH, "w", encoding="utf-8") as handle:
         json.dump(history[-100:], handle, ensure_ascii=False, indent=2)
-    # Rebuild once more so the embedded dashboard contains this run's final status.
-    subprocess.run([sys.executable, "build_html.py"], cwd=HERE, capture_output=True)
+    # Rebuild once more so the embedded dashboard contains this run's final status —
+    # only when we actually have fresh market data (otherwise we'd wipe the last-good build).
+    if fetch_ok:
+        subprocess.run([sys.executable, "build_html.py"], cwd=HERE, capture_output=True)
     for stage in stages:
         mark = "✅" if stage.get("ok") else "❌"
         print(f"{mark} {stage['name']} ({stage.get('duration_seconds', 0)}s)")
@@ -86,7 +100,10 @@ def main():
             print(stage["stdout"])
         if stage.get("stderr"):
             print(stage["stderr"], file=sys.stderr)
-    raise SystemExit(0 if status["ok"] else 2)
+    if not fetch_ok:
+        print("⚠️  שאיבת נתוני השוק נכשלה — הלוח הקודם נשמר כמות שהוא ולא נבנה מחדש (best-effort).",
+              file=sys.stderr)
+    raise SystemExit(0 if critical_ok else 2)
 
 
 if __name__ == "__main__":

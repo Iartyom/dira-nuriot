@@ -98,6 +98,7 @@ dira-nuriot/
 ├── fetch_deals.py     ← מושך עסקאות מ-nadlan.gov.il (מצב "data")
 ├── build_html.py      ← מייצר את index.html מהנתונים
 ├── photo.jpg          ← (אופציונלי) תמונת הדירה — תוצג אוטומטית
+├── assets/            ← (אופציונלי) assets/location-map.png — מפת מיקום סטטית לסקשן המסמכים
 └── updates/           ← snapshot מתוארך לכל ריצה
 ```
 
@@ -113,6 +114,14 @@ cd ~/Documents/dira-nuriot
 ./update.sh          # ברירת מחדל: data ואז מציע את מצב agent
 python3 update_all.py # חלופה ניידת גם ללא bash
 ```
+
+> 🪟 **Windows (PowerShell):** אין `bash` ולרוב אין `python3`. הרץ את הסקריפטים ישירות עם `python`:
+> ```powershell
+> python dira-nuriot\update_all.py    # צינור מלא: fetch → validate → snapshot → build
+> python dira-nuriot\build_html.py    # בנייה מחדש של index.html בלבד
+> python dira-nuriot\fetch_deals.py   # מצב data (משיכת נתוני שוק ציבוריים)
+> ```
+> מומלץ Python 3.11 (כמו ב-CI). את מצב "אייג'נט" מפעילים ע"י קריאת [`PROMPT.md`](./PROMPT.md).
 
 > נתוני עסקאות בודדות באתר Nadlan מוגנים כיום ב-reCAPTCHA ובחתימת בקשה.
 > מצב `data` משתמש רק בנקודות קצה ציבוריות שמתאימות להרצה אוטומטית: GovMap

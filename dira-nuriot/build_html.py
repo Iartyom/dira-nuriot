@@ -167,6 +167,64 @@ section > h2:hover { color:var(--accent); }
 .next { background:#06281f; border:1px solid var(--green); border-radius:10px; padding:10px 14px; margin-top:10px; font-size:14px; }
 code { background:#04293b; padding:2px 6px; border-radius:6px; }
 footer { text-align:center; color:var(--muted); font-size:12px; margin-top:40px; }
+/* ניווט סקשנים דביק */
+.secnav { position:sticky; top:0; z-index:30; display:flex; gap:6px; overflow-x:auto; padding:9px 4px; margin:10px -4px 0; background:rgba(11,17,32,.94); backdrop-filter:blur(6px); border-bottom:1px solid var(--line); scrollbar-width:thin; }
+.secnav a { flex:0 0 auto; font-size:12px; color:var(--muted); text-decoration:none; background:var(--card2); border:1px solid var(--line); border-radius:20px; padding:4px 11px; white-space:nowrap; }
+.secnav a:hover { color:var(--accent); border-color:var(--accent); }
+.backtop { position:fixed; inset-inline-start:16px; bottom:16px; z-index:40; background:var(--accent); color:#04293b; border:0; border-radius:50%; width:42px; height:42px; font-size:18px; font-weight:800; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.4); display:none; }
+/* שורת KPI עליונה */
+.hero { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:14px 0 0; }
+.kpi { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+.kpi .k-lbl { color:var(--muted); font-size:11.5px; }
+.kpi .k-val { font-size:19px; font-weight:800; margin-top:3px; }
+.kpi .k-sub { color:var(--muted); font-size:11px; margin-top:2px; }
+/* באנר טריות */
+.stale { border-radius:10px; padding:9px 14px; font-size:13px; margin-top:10px; border:1px solid; }
+.stale-ok { background:#06281f; border-color:#166534; color:#bbf7d0; }
+.stale-warn { background:#3b1f06; border-color:#b45309; color:#fde68a; }
+.stale-bad { background:#3f1117; border-color:#991b1b; color:#fecaca; }
+@media print {
+  body { background:#fff; color:#000; }
+  .toolbar, .secnav, .backtop, .toast, iframe, .addbtn, .delbtn, .filebtn { display:none !important; }
+  .wrap { max-width:100%; padding:0; }
+  .card, .week, .metric, .health-item, .kpi, .foot { background:#fff !important; border-color:#bbb !important; }
+  section { break-inside:avoid; margin-top:18px; }
+  section > h2 { color:#000 !important; }
+  a { color:#000; text-decoration:underline; }
+  .big, .big2, .metric strong, .kpi .k-val { color:#000 !important; }
+}
+/* ============ שכבת עיצוב פרימיום (מוחלת מעל הבסיס) ============ */
+:root {
+  --bg:#0a0e1a; --card:#141d33; --card2:#1c2842; --ink:#eaf1fb; --muted:#93a4c0;
+  --accent:#38bdf8; --accent2:#22d3ee; --gold:#f5c451; --green:#34d399; --line:#26324e;
+}
+html { scroll-behavior:smooth; scroll-padding-top:60px; }
+body { font-family:"Heebo","Segoe UI",Rubik,Arial,sans-serif;
+  background:radial-gradient(1100px 560px at 100% -8%, #12233f 0%, rgba(10,14,26,0) 60%), var(--bg);
+  background-attachment:fixed; }
+* { scrollbar-width:thin; scrollbar-color:#33507e transparent; }
+::selection { background:rgba(56,189,248,.28); }
+.wrap { max-width:1120px; }
+header { background:linear-gradient(135deg, rgba(56,189,248,.10), rgba(52,211,153,.05)); border:1px solid var(--line);
+  border-radius:18px; padding:20px 24px; margin-top:10px; }
+header .info h1 { letter-spacing:-.4px; }
+.photo { flex:0 0 230px; height:158px; box-shadow:0 8px 26px rgba(0,0,0,.35); }
+section > h2 { font-size:21px; letter-spacing:-.3px; border-right-width:4px; }
+.card, .week, .metric, .health-item, .kpi, .tier, .foot, .scenario {
+  transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.card:hover, .kpi:hover, .health-item:hover { border-color:#375888; box-shadow:0 10px 28px rgba(0,0,0,.30); }
+.kpi { background:linear-gradient(162deg, var(--card), var(--card2)); }
+.kpi .k-val { letter-spacing:-.3px; }
+.addbtn { background:linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow:0 5px 16px rgba(56,189,248,.22); }
+.addbtn:hover { opacity:1; transform:translateY(-1px); box-shadow:0 8px 22px rgba(56,189,248,.34); }
+.secnav { padding:10px 4px; }
+.secnav a { transition:color .15s, border-color .15s, background .15s; }
+.secnav a:hover { background:rgba(56,189,248,.12); }
+.badge { backdrop-filter:blur(2px); }
+.metric strong, .foot .big2, .scenario strong { letter-spacing:-.3px; }
+.warn { border-radius:12px; }
+footer { border-top:1px solid var(--line); padding-top:18px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } *{ transition:none !important; } }
 """
 
 JS = r"""
@@ -316,10 +374,12 @@ function recalcPayments(){
   document.getElementById("remaining-total").textContent=nis(remaining);
   const ie=document.getElementById("index-extra"); if(ie) ie.textContent=(extra>0?"+":"")+nis(extra);
   const nb=document.getElementById("next-payment");
+  const hnp=document.getElementById("hero-nextpay"), hnps=document.getElementById("hero-nextpay-sub");
   if(nextEl){ const amt=parseFloat(nextEl.dataset.amt)||0; const eff=nextEl.dataset.indexed==="1"?amt*factor:amt;
     nb.style.display="block";
-    nb.innerHTML='⏭️ התשלום הבא: <b>'+nextEl.dataset.date+'</b> · '+nis(eff); }
-  else nb.style.display="none";
+    nb.innerHTML='⏭️ התשלום הבא: <b>'+nextEl.dataset.date+'</b> · '+nis(eff);
+    if(hnp) hnp.textContent=nis(eff); if(hnps) hnps.textContent=nextEl.dataset.date; }
+  else { nb.style.display="none"; if(hnp) hnp.textContent="הושלם"; if(hnps) hnps.textContent="כל התשלומים שולמו"; }
 }
 document.querySelectorAll(".paychk").forEach(c=>{
   const k="paid_"+c.dataset.date;
@@ -535,23 +595,52 @@ function addRoomRow(table,d){ d=d||{};
   document.getElementById("add-room").addEventListener("click",()=>{addRoomRow(t,{});});
 })();
 
-// ---------- קיפול נושאים ----------
+// ---------- קיפול נושאים + ניווט ----------
 const sections=[...document.querySelectorAll("section")];
-const toggles=[];
+const applers=[];
+const navItems=[];
 sections.forEach((sec,i)=>{
   const h2=sec.querySelector("h2"); if(!h2) return;
+  const title=h2.textContent.trim();
+  sec.id="sec-"+i;
+  navItems.push({i,title});
   const rest=[...sec.children].filter(el=>el!==h2);
   const ind=document.createElement("span"); ind.className="toggle-ind"; h2.prepend(ind);
   const key="collapsed_"+i;
-  function apply(c){ rest.forEach(el=>el.style.display=c?"none":""); ind.textContent=c?"▸":"▾"; }
-  let c=!!state[key]; apply(c);
-  h2.addEventListener("click",()=>{ c=!c; state[key]=c; save(); apply(c); });
-  toggles.push((c)=>{ state[key]=c; apply(c); });
+  function apply(){ const c=!!state[key]; rest.forEach(el=>el.style.display=c?"none":""); ind.textContent=c?"▸":"▾"; }
+  apply(); applers[i]=apply;
+  h2.addEventListener("click",()=>{ state[key]=!state[key]; save(); apply(); });
 });
-function setAll(c){ sections.forEach((sec,i)=>{ state["collapsed_"+i]=c; }); save();
-  toggles.forEach(t=>t(c)); }
+function setAll(c){ sections.forEach((sec,i)=>{ if(sec.querySelector("h2")) state["collapsed_"+i]=c; }); save();
+  applers.forEach(a=>a&&a()); }
 const ea=document.getElementById("expand-all"); if(ea) ea.addEventListener("click",()=>setAll(false));
 const ca=document.getElementById("collapse-all"); if(ca) ca.addEventListener("click",()=>setAll(true));
+// תפריט ניווט דביק
+(function(){ if(!sections.length) return;
+  const nav=document.createElement("nav"); nav.className="secnav";
+  navItems.forEach(({i,title})=>{
+    const a=document.createElement("a"); a.href="#sec-"+i; a.textContent=title;
+    a.addEventListener("click",e=>{ e.preventDefault(); state["collapsed_"+i]=false; save(); if(applers[i])applers[i]();
+      document.getElementById("sec-"+i).scrollIntoView({behavior:"smooth",block:"start"}); });
+    nav.appendChild(a);
+  });
+  document.querySelector(".wrap").insertBefore(nav, sections[0]);
+})();
+// כפתור חזרה למעלה
+(function(){ const b=document.createElement("button"); b.className="backtop"; b.textContent="↑"; b.title="למעלה";
+  document.body.appendChild(b);
+  b.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
+  window.addEventListener("scroll",()=>{ b.style.display=window.scrollY>500?"block":"none"; });
+})();
+// הרחבת כל הסקשנים להדפסה (ללא שמירה)
+window.addEventListener("beforeprint",()=>{ sections.forEach(sec=>{ const h2=sec.querySelector("h2"); if(!h2) return;
+  [...sec.children].forEach(el=>{ if(el!==h2) el.style.display=""; }); }); });
+window.addEventListener("afterprint",()=>{ applers.forEach(a=>a&&a()); });
+// עד מסירה (KPI)
+(function(){ const el=document.getElementById("hero-handover"); if(!el||!DATA.payments||!DATA.payments.length) return;
+  const last=new Date(DATA.payments[DATA.payments.length-1].date);
+  const days=Math.ceil((last-new Date())/(1000*60*60*24));
+  el.textContent = days>0 ? days.toLocaleString("he-IL")+" ימים" : "הגיע/עבר"; })();
 
 renderOptions();
 recompute();
@@ -590,6 +679,7 @@ def main():
     nb = apt.get("neighborhood_review", {})
     up = apt.get("upgrade_paths", {})
     cons = apt.get("constraints", {})
+    docs = apt.get("documents", {})
     photo = find_photo()
     wet = "".join(f'<span class="pill">🚿 {w}</span>' for w in u.get("wet_areas", []))
 
@@ -598,6 +688,31 @@ def main():
     equity = val.get("on_paper_equity_nis")
     equity_pct = val.get("on_paper_equity_pct")
     equity_color = "#22c55e" if (equity or 0) >= 0 else "#f87171"
+
+    # ----- טווח שווי/רווח + טריות הערכה -----
+    val_low = val.get("estimated_value_low_nis")
+    val_high = val.get("estimated_value_high_nis")
+    equity_low = (val_low - paid_price) if (val_low and paid_price) else None
+    equity_high = (val_high - paid_price) if (val_high and paid_price) else None
+    equity_range_txt = (
+        f"{shekel(equity_low)} – {shekel(equity_high)}"
+        if (equity_low is not None and equity_high is not None) else shekel(equity)
+    )
+    val_age_days = None
+    try:
+        val_age_days = (datetime.date.today()
+                        - datetime.datetime.strptime(val.get("last_updated", ""), "%Y-%m-%d").date()).days
+    except (TypeError, ValueError):
+        pass
+    if val_age_days is None:
+        stale_class, stale_txt = "stale-warn", "לא ידוע מתי עודכנה ההערכה — מומלץ רענון מחקר (מצב agent)."
+    elif val_age_days <= 30:
+        stale_class, stale_txt = "stale-ok", f"הערכת השווי עודכנה לפני {val_age_days} ימים — עדכנית."
+    elif val_age_days <= 60:
+        stale_class, stale_txt = "stale-warn", f"הערכת השווי בת {val_age_days} ימים — כדאי רענון מחקר (מצב agent) בקרוב."
+    else:
+        stale_class, stale_txt = "stale-bad", f"הערכת השווי בת {val_age_days} ימים — נדרש רענון מחקר חודשי (הרץ מצב agent לפי PROMPT.md)."
+    confidence_badge_class = {"גבוהה": "badge-ok", "בינונית": "badge-warn"}.get(val.get("confidence", ""), "badge-bad")
 
     public_market = market.get("public_market_summary", {})
     market_location = market.get("location", {})
@@ -768,7 +883,18 @@ def main():
                "payments": pay.get("schedule", []),
                "management": management,
                "market": market,
-               "update_status": status,
+               "update_status": {
+                   "ok": status.get("ok"),
+                   "completed_at": status.get("completed_at"),
+                   "stages": [
+                       {
+                           "name": stage.get("name"),
+                           "ok": stage.get("ok"),
+                           "duration_seconds": stage.get("duration_seconds", 0),
+                       }
+                       for stage in status.get("stages", [])
+                   ],
+               },
                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat()}
 
     # ----- סקשנים שעוברים לסוף / נוספים -----
@@ -802,6 +928,80 @@ def main():
     </div>
   </section>"""
 
+    # ----- מיקום, תוכניות ומסמכים רשמיים -----
+    documents_section = ""
+    if docs:
+        gis_url = docs.get("city_gis_url", "#")
+        map_lat = docs.get("map_lat")
+        map_lon = docs.get("map_lon")
+        map_zoom = docs.get("map_zoom", 18)
+        if map_lat is not None and map_lon is not None:
+            # תצ״א/לוויין עדכני (Google hybrid). gis-net העירוני חוסם iframe, ו-OSM embed הוא מפת רחובות בלבד.
+            ortho_src = (
+                f"https://maps.google.com/maps?q={map_lat},{map_lon}"
+                f"&t=h&z={map_zoom}&hl=he&output=embed"
+            )
+            map_visual = (
+                f'<iframe src="{ortho_src}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" '
+                f'title="תצ״א עדכנית — הבניין" '
+                f'style="width:100%;height:320px;border:1px solid var(--line);border-radius:10px"></iframe>'
+            )
+        else:
+            map_img = docs.get("location_map_image")
+            map_visual = (
+                f'<div class="photo placeholder" style="margin:0">🗺️ שמור צילום מפה בשם '
+                f'<code>{map_img or "assets/location-map.png"}</code></div>'
+            )
+        plan_local = docs.get("apartment_plan_pdf_local")
+        plan_url = docs.get("apartment_plan_pdf_url", "#")
+        plan_embed = (
+            f'<object data="{plan_local}" type="application/pdf" '
+            f'style="width:100%;height:360px;border-radius:10px;border:1px solid var(--line)">'
+            f'<div class="note">לא ניתן להטמיע כאן (למשל באתר הפומבי — הקובץ פרטי). '
+            f'<a href="{plan_url}" target="_blank">פתח את תוכנית הדירה ↗</a></div></object>'
+            if plan_local else ""
+        )
+        building_url = docs.get("building_plan_pdf_url", "#")
+        cityhall_url = docs.get("cityhall_building_url", "#")
+        documents_section = f"""
+  <section>
+    <h2>📍 מיקום, תוכניות ומסמכים רשמיים</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>🗺️ מפת מיקום</h3>
+        {map_visual}
+        <div class="note">תצ״א/לוויין עדכני לאוריינטציה. גושים/חלקות, תצ״א רשמית ותוכניות בניין נמצאים ב-GIS העירוני.</div>
+        <a class="addbtn" href="{gis_url}" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">🗺️ פתח GIS עירוני (עם כל השכבות) ↗</a>
+      </div>
+      <div class="card">
+        <h3>📐 תוכנית הדירה ({u.get('unit_code','')})</h3>
+        {plan_embed}
+        <div class="src"><a href="{plan_url}" target="_blank">פתח / הורד PDF ↗</a></div>
+        <div class="note">מוטמע מקומית; באתר הפומבי הקובץ פרטי — נפתח בקישור.</div>
+      </div>
+      <div class="card">
+        <h3>🏢 תוכנית / תיק הבניין</h3>
+        <div class="src"><a href="{building_url}" target="_blank">פתח סריקת תיק בניין ↗</a></div>
+        <div class="note">{docs.get('building_plan_note','')}</div>
+      </div>
+      <div class="card">
+        <h3>🏛️ תיק הבניין בעירייה</h3>
+        <div class="src"><a href="{cityhall_url}" target="_blank">פתח בקשה {docs.get('cityhall_request_id','')} ↗</a></div>
+        <div class="note">מערכת הרישוי של עיריית ראשון לציון (נפתח בכרטיסייה חדשה).</div>
+      </div>
+    </div>
+  </section>"""
+
+    # ----- שורת KPI עליונה -----
+    hero_html = f"""
+  <div class="hero">
+    <div class="kpi"><div class="k-lbl">מחיר ששולם</div><div class="k-val">{shekel(paid_price)}</div><div class="k-sub">חוזה {pur.get('contract_signed','')}</div></div>
+    <div class="kpi"><div class="k-lbl">שווי מוערך (טווח)</div><div class="k-val">{shekel(val_low)}–{shekel(val_high)}</div><div class="k-sub"><span class="badge {confidence_badge_class}">ביטחון {val.get('confidence','—')}</span></div></div>
+    <div class="kpi"><div class="k-lbl">רווח על הנייר (טווח)</div><div class="k-val" style="color:{equity_color}">{equity_range_txt}</div><div class="k-sub">≈ +{equity_pct}% · מותנה בנעילת מכירה</div></div>
+    <div class="kpi"><div class="k-lbl">התשלום הבא</div><div class="k-val" id="hero-nextpay">—</div><div class="k-sub" id="hero-nextpay-sub">לוח החוזה</div></div>
+    <div class="kpi"><div class="k-lbl">עד מסירה משוערת</div><div class="k-val" id="hero-handover">—</div><div class="k-sub">תשלום אחרון 30/09/28</div></div>
+  </div>"""
+
     body = f"""
   <header>
     {photo_html}
@@ -810,6 +1010,7 @@ def main():
       <div class="meta">{u.get('rooms','')} חדרים · {u.get('area_sqm','')} מ"ר + מרפסת {u.get('balcony_sqm','')} מ"ר · {p.get('neighborhood','')}, {p.get('city','')} · פרויקט {p.get('developer','')} · מחיר למשתכן · מסירה {pur.get('expected_handover','')}</div>
     </div>
   </header>
+{hero_html}
 
   <div class="toolbar">
     <button class="addbtn" id="expand-all">⊕ פתח הכל</button>
@@ -818,6 +1019,7 @@ def main():
     <label class="addbtn filebtn" style="background:var(--card2);color:var(--ink)">⬆ שחזור גיבוי<input type="file" id="import-state" accept="application/json"></label>
   </div>
   <div class="toast" id="backup-msg">עריכות נשמרות מקומית. מומלץ לייצא גיבוי לאחר שינוי משמעותי.</div>
+{documents_section}
 
   <section>
     <h2>🩺 מצב מערכת ונתונים</h2>
@@ -832,6 +1034,12 @@ def main():
     <div class="grid">
       <div class="card"><h3>שלבי הריצה האחרונה</h3>{stage_html}</div>
       <div class="card scroll"><h3>היסטוריית עדכונים</h3><table><tr><th>מועד</th><th>מצב</th><th>שלבים</th></tr>{history_rows}</table></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>🔄 רענון נתונים</h3>
+      <div class="sub">הצינור המלא (משיכת שוק → אימות → snapshot → בניית HTML) רץ ב-GitHub Actions — הקישור פותח את המסך שבו לוחצים <b>"Run workflow"</b>. רץ גם אוטומטית כל יום שני.</div>
+      <a class="addbtn" href="{p.get('refresh_workflow_url','#')}" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">🔄 הרץ עדכון נתונים (GitHub Actions) ↗</a>
+      <div class="note" style="margin-top:8px">מקומית (מריצים את כל הסקריפטים): <code>python dira-nuriot/update_all.py</code></div>
     </div>
   </section>
 
@@ -919,6 +1127,7 @@ def main():
 
   <section>
     <h2>📈 הערכת שווי, מגמה ומעקב</h2>
+    <div class="stale {stale_class}">🕒 {stale_txt}</div>
     <div class="card">
       <h3>מודל שווי שקוף</h3>
       <div class="field-grid"><label>שווי בסיס<input class="cell" id="valuation-base" type="number"></label></div>
@@ -1100,6 +1309,7 @@ def main():
     <h2>🔁 פלופ — מסלולי שדרוג עתידיים</h2>
     <div class="sub">{up.get('preferences','')}</div>
     <div class="warn">💡 {up.get('current_equity_note','')}</div>
+    <div class="stale stale-bad">🔒 מימוש הרווח והשדרוג <b>מותנים בתום נעילת המכירה של מחיר למשתכן — שטרם אומתה</b> (ראו סקשן "מגבלות מחיר למשתכן"). עד לאימות סעיף ההגבלה בחוזה, זהו תרחיש עתידי בלבד.</div>
     {tiers_html}
     <div class="src">{srcs(up.get('sources'))}</div>
   </section>
@@ -1112,7 +1322,13 @@ def main():
     html = (
         '<!DOCTYPE html>\n<html lang="he" dir="rtl">\n<head>\n'
         '<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        '<title>ניהול שיפוץ — דירת נוריות</title>\n<style>' + CSS + '</style>\n</head>\n<body>\n'
+        '<meta name="description" content="לוח הדירה — נוריות, ראשון לציון: שווי, תשלומים, שיפוץ, שכונה ומסמכים רשמיים.">\n'
+        '<meta name="theme-color" content="#0a0e1a">\n'
+        '<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+        '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap">\n'
+        '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ctext y=\'.9em\' font-size=\'90\'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">\n'
+        '<title>לוח הדירה — נוריות</title>\n<style>' + CSS + '</style>\n</head>\n<body>\n'
         '<div class="wrap">' + body + '</div>\n'
         '<script>\nconst DATA = ' + json.dumps(payload, ensure_ascii=False) + ';\n' + JS + '\n</script>\n'
         '</body>\n</html>'
