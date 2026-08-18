@@ -39,6 +39,12 @@ def test_build_contains_new_features():
         'maps.google.com',       # embedded ortho window
         'actions/workflows/refresh-data.yml',  # update button
         '@media print',
+        'comp-price-avg',        # D3: comparable-only average
+        'בר-השוואה',             # D3: comparability column
+        'tabular-nums',          # direction A: aligned numerals
+        'tabpanel',              # IA: domain tabs
+        'DOMAINS',               # IA: tab domain map
+        '18 חודשים',             # verified sale-lock window
     ]
     for marker in required:
         assert marker in html, marker

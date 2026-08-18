@@ -1,8 +1,8 @@
 {
   "_comment": "Editable management seeds. Runtime edits are stored in the browser and can be exported/imported as a versioned backup.",
   "valuation_model": {
-    "base_value_nis": 3250000,
-    "base_label": "הערכת שוק ידנית 2026-06",
+    "base_value_nis": 3350000,
+    "base_label": "הערכת שוק ידנית 2026-08",
     "adjustments": [
       {"key": "new_build", "label": "פרמיית בנייה חדשה", "pct": 3, "reason": "דירה חדשה בפרויקט חדש"},
       {"key": "balcony", "label": "מרפסת 13 מ״ר", "pct": 1, "reason": "שטח חוץ שימושי"},
@@ -17,15 +17,16 @@
   },
   "comparables": [
     {
-      "date": "2026-06",
+      "date": "2026-08",
       "address": "נוריות — קטגוריית 6 חדרים",
       "rooms": 6,
       "area_sqm": null,
-      "price_nis": 3565909,
+      "price_nis": 3610833,
       "kind": "מדלן — אינדיקציית בנייה חדשה",
       "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C",
       "confidence": "בינונית",
-      "notes": "סיכום קטגוריה עדכני; לא מודעה בודדת ולא עסקה סגורה"
+      "comparable": true,
+      "notes": "סיכום קטגוריה עדכני; לא מודעה בודדת ולא עסקה סגורה. בר-השוואה: אותה שכונה + 6 חדרים."
     },
     {
       "date": "2025-03",
@@ -36,7 +37,8 @@
       "kind": "סיכום ממשלתי — כל החדרים",
       "source_url": "https://data.nadlan.gov.il/api/pages/neighborhood/buy/65209940.json",
       "confidence": "נמוכה לנכס",
-      "notes": "נתון מצרפי, גבול ישן, לא בר-השוואה ישירה"
+      "comparable": false,
+      "notes": "נתון מצרפי (כל החדרים), גבול סטטיסטי ישן — רקע בלבד, לא נכנס לממוצע."
     },
     {
       "date": "2026-06",
@@ -47,7 +49,8 @@
       "kind": "מדלן — שכונה חדשה להשוואה",
       "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%A8%D7%A7%D7%99%D7%A1%D7%99%D7%9D-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C",
       "confidence": "בינונית",
-      "notes": "שכונה סמוכה וחדשה; אינדיקציית קטגוריה ולא עסקה בודדת"
+      "comparable": false,
+      "notes": "שכונה סמוכה — בנצ׳מרק בלבד. סמן כ'בר-השוואה' רק אם רוצים לשקלל אותה בממוצע."
     }
   ],
   "cash_flow": {

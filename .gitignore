@@ -46,9 +46,12 @@ build/
 
 # Ignore user-specific files
 *.log
+*.stackdump
+.history/
 
-# Private apartment source document
+# Private apartment source document (+ rendered image of it)
 dira-nuriot/128A5.pdf
+dira-nuriot/assets/plan-128A5.png
 
 # Generated downloads, raw third-party pages, and historical snapshots
 dira-nuriot/updates/raw-*

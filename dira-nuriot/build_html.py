@@ -102,7 +102,7 @@ table input.cell { width:100%; background:var(--bg); border:1px solid var(--line
 .vtrend { font-size:15px; margin-bottom:10px; font-weight:700; }
 .vchart { display:flex; align-items:flex-end; gap:16px; height:200px; padding:30px 0 0; }
 .vbar { flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; }
-.vbar-fill { width:70%; max-width:90px; background:linear-gradient(180deg,#38bdf8,#16a34a); border-radius:8px 8px 0 0; min-height:4px; position:relative; display:flex; justify-content:center; }
+.vbar-fill { width:70%; max-width:90px; background:linear-gradient(180deg,#38bdf8,#22d3ee 55%,#34d399); border-radius:8px 8px 0 0; min-height:4px; position:relative; display:flex; justify-content:center; }
 .vbar-amt { position:absolute; top:-24px; font-size:15px; font-weight:800; color:var(--gold); white-space:nowrap; }
 .vbar-lbl { font-size:12px; color:var(--muted); margin-top:7px; text-align:center; }
 .vbar-lbl b { color:var(--ink); display:block; }
@@ -193,15 +193,15 @@ footer { text-align:center; color:var(--muted); font-size:12px; margin-top:40px;
   a { color:#000; text-decoration:underline; }
   .big, .big2, .metric strong, .kpi .k-val { color:#000 !important; }
 }
-/* ============ שכבת עיצוב פרימיום (מוחלת מעל הבסיס) ============ */
+/* ============ שכבת עיצוב פרימיום — Executive Dark (כיוון A) ============ */
 :root {
-  --bg:#0a0e1a; --card:#141d33; --card2:#1c2842; --ink:#eaf1fb; --muted:#93a4c0;
+  --bg:#0a1122; --card:#142033; --card2:#182a45; --ink:#eaf1fb; --muted:#8fa2c0;
   --accent:#38bdf8; --accent2:#22d3ee; --gold:#f5c451; --green:#34d399; --line:#26324e;
 }
 html { scroll-behavior:smooth; scroll-padding-top:60px; }
 body { font-family:"Heebo","Segoe UI",Rubik,Arial,sans-serif;
-  background:radial-gradient(1100px 560px at 100% -8%, #12233f 0%, rgba(10,14,26,0) 60%), var(--bg);
-  background-attachment:fixed; }
+  background:radial-gradient(1100px 560px at 100% -8%, #14294a 0%, rgba(10,17,34,0) 60%), var(--bg);
+  background-attachment:fixed; font-variant-numeric:tabular-nums; }
 * { scrollbar-width:thin; scrollbar-color:#33507e transparent; }
 ::selection { background:rgba(56,189,248,.28); }
 .wrap { max-width:1120px; }
@@ -224,6 +224,20 @@ section > h2 { font-size:21px; letter-spacing:-.3px; border-right-width:4px; }
 .metric strong, .foot .big2, .scenario strong { letter-spacing:-.3px; }
 .warn { border-radius:12px; }
 footer { border-top:1px solid var(--line); padding-top:18px; }
+#comparables-table tr.notcomp { opacity:.45; }
+#comparables-table tr.notcomp:hover { opacity:.8; }
+/* טאבים ראשיים */
+.tabs { position:sticky; top:0; z-index:30; display:flex; gap:7px; overflow-x:auto; padding:11px 4px; margin:12px -4px 6px;
+        background:rgba(10,17,34,.95); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); scrollbar-width:thin; }
+.tab { flex:0 0 auto; font-family:inherit; font-size:14.5px; font-weight:700; color:var(--muted); background:var(--card2);
+       border:1px solid var(--line); border-radius:11px; padding:9px 17px; white-space:nowrap; cursor:pointer; transition:all .15s; }
+.tab:hover { color:var(--ink); border-color:#375888; }
+.tab.active { color:#04263a; background:linear-gradient(135deg, var(--accent), var(--accent2)); border-color:transparent; box-shadow:0 5px 16px rgba(56,189,248,.28); }
+.tab .cnt { font-size:11px; opacity:.65; margin-inline-start:5px; font-variant-numeric:tabular-nums; }
+.tabpanel { display:none; }
+.tabpanel.active { display:block; }
+.tabpanel > section:first-child { margin-top:20px; }
+@media print { .tabs { display:none !important; } .tabpanel { display:block !important; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } *{ transition:none !important; } }
 """
 
@@ -541,15 +555,28 @@ function renderValuationModel(){
 document.getElementById("valuation-base").addEventListener("input",e=>{state.valuation_base=e.target.value;save();renderValuationModel();});
 
 function addCompRow(table,d){ d=d||{}; const tr=document.createElement("tr");tr.className="datarow";
+  const cmp = d.comparable===false ? "" : "checked";  // ברירת מחדל: בר-השוואה, אלא אם סומן במפורש false
   tr.innerHTML='<td><input class="cell" data-f="date" value="'+esc(d.date)+'"></td><td><input class="cell" data-f="address" value="'+esc(d.address)+'"></td>'
     +'<td><input class="cell" data-f="rooms" type="number" value="'+esc(d.rooms)+'"></td><td><input class="cell" data-f="area_sqm" type="number" value="'+esc(d.area_sqm)+'"></td>'
     +'<td><input class="cell" data-f="price_nis" type="number" value="'+esc(d.price_nis)+'"></td><td class="num ppsqm">—</td>'
     +'<td><input class="cell" data-f="kind" value="'+esc(d.kind)+'"></td><td><input class="cell" data-f="confidence" value="'+esc(d.confidence)+'"></td>'
+    +'<td style="text-align:center"><input type="checkbox" data-f="comparable" '+cmp+'></td>'
     +'<td><input class="cell" data-f="source_url" value="'+esc(d.source_url)+'" placeholder="https://"></td><td><button class="delbtn">✕</button></td>';
-  table.appendChild(tr); const update=()=>{const p=parseFloat(tr.querySelector('[data-f=price_nis]').value),a=parseFloat(tr.querySelector('[data-f=area_sqm]').value);tr.querySelector('.ppsqm').textContent=p&&a?nis(p/a):"—";saveRows("comparables",table);renderCompStats();};
-  tr.querySelectorAll("input").forEach(i=>i.addEventListener("input",update));tr.querySelector(".delbtn").addEventListener("click",()=>{tr.remove();saveRows("comparables",table);renderCompStats();});update();
+  table.appendChild(tr); const update=()=>{const p=parseFloat(tr.querySelector('[data-f=price_nis]').value),a=parseFloat(tr.querySelector('[data-f=area_sqm]').value);tr.querySelector('.ppsqm').textContent=p&&a?nis(p/a):"—";tr.classList.toggle("notcomp",!tr.querySelector('[data-f=comparable]').checked);saveRows("comparables",table);renderCompStats();};
+  tr.querySelectorAll("input").forEach(i=>i.addEventListener(i.type==="checkbox"?"change":"input",update));tr.querySelector(".delbtn").addEventListener("click",()=>{tr.remove();saveRows("comparables",table);renderCompStats();});update();
 }
-function renderCompStats(){const rows=[...document.querySelectorAll('#comparables-table tr.datarow')].map(tr=>{const p=parseFloat(tr.querySelector('[data-f=price_nis]').value),a=parseFloat(tr.querySelector('[data-f=area_sqm]').value);return p&&a?p/a:null}).filter(Boolean);const avg=rows.length?rows.reduce((x,y)=>x+y,0)/rows.length:0;document.getElementById('comp-count').textContent=rows.length;document.getElementById('comp-avg').textContent=avg?nis(avg)+"/מ״ר":"—";}
+function renderCompStats(){
+  const rows=[...document.querySelectorAll('#comparables-table tr.datarow')]
+    .filter(tr=>tr.querySelector('[data-f=comparable]').checked)
+    .map(tr=>({p:parseFloat(tr.querySelector('[data-f=price_nis]').value),a:parseFloat(tr.querySelector('[data-f=area_sqm]').value)}));
+  const priced=rows.filter(r=>r.p>0);
+  const perSqm=rows.filter(r=>r.p>0&&r.a>0).map(r=>r.p/r.a);
+  const priceAvg=priced.length?priced.reduce((s,r)=>s+r.p,0)/priced.length:0;
+  const ppsqmAvg=perSqm.length?perSqm.reduce((s,x)=>s+x,0)/perSqm.length:0;
+  document.getElementById('comp-count').textContent=rows.length;
+  document.getElementById('comp-price-avg').textContent=priceAvg?nis(priceAvg):"—";
+  document.getElementById('comp-avg').textContent=ppsqmAvg?nis(ppsqmAvg)+"/מ״ר":"—";
+}
 (function(){const t=document.getElementById("comparables-table"),seed=state.comparables||DATA.management.comparables||[];seed.forEach(d=>addCompRow(t,d));document.getElementById("add-comp").addEventListener("click",()=>addCompRow(t,{}));renderValuationModel();renderCompStats();})();
 
 // ---------- תחזית תזרים ----------
@@ -615,16 +642,46 @@ function setAll(c){ sections.forEach((sec,i)=>{ if(sec.querySelector("h2")) stat
   applers.forEach(a=>a&&a()); }
 const ea=document.getElementById("expand-all"); if(ea) ea.addEventListener("click",()=>setAll(false));
 const ca=document.getElementById("collapse-all"); if(ca) ca.addEventListener("click",()=>setAll(true));
-// תפריט ניווט דביק
-(function(){ if(!sections.length) return;
-  const nav=document.createElement("nav"); nav.className="secnav";
-  navItems.forEach(({i,title})=>{
-    const a=document.createElement("a"); a.href="#sec-"+i; a.textContent=title;
-    a.addEventListener("click",e=>{ e.preventDefault(); state["collapsed_"+i]=false; save(); if(applers[i])applers[i]();
-      document.getElementById("sec-"+i).scrollIntoView({behavior:"smooth",block:"start"}); });
-    nav.appendChild(a);
+// ---------- טאבים ראשיים (6 תחומים) ----------
+// כל סקשן משויך לתחום לפי כותרת; הסקשנים מועברים לפאנל התחום בסדר הרצוי.
+const DOMAINS=[
+  {key:"overview", label:"סקירה", match:["#value-summary","דברים לביצוע","משימות לביצוע"]},
+  {key:"finance", label:"כספים", match:["נתוני שוק","לוח תשלומים","תחזית תזרים","הערכת שווי"]},
+  {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה","לו\"ז ביצוע","מדריך אנשי מקצוע","ספקים והצעות","רשימת קניות"]},
+  {key:"handover", label:"מסירה", match:["מסירה ובדק בית"]},
+  {key:"property", label:"נכס וסביבה", match:["מיקום, תוכניות","מידות חדרים","סקירת שכונה","פלופ","מגבלות מחיר"]},
+  {key:"system", label:"מערכת", match:["מצב מערכת"]},
+];
+(function(){
+  const wrap=document.querySelector(".wrap"), footer=wrap.querySelector("footer");
+  const valueGrid=document.getElementById("value-summary");
+  function findEl(token){
+    if(token[0]==="#") return document.getElementById(token.slice(1));
+    return sections.find(s=>{ const h=s.querySelector("h2"); return h && h.textContent.includes(token); });
+  }
+  const tabbar=document.createElement("nav"); tabbar.className="tabs";
+  const panels={};
+  DOMAINS.forEach(d=>{
+    const panel=document.createElement("div"); panel.className="tabpanel"; panel.id="tab-"+d.key; panel.dataset.tab=d.key;
+    let count=0;
+    d.match.forEach(tok=>{ const el=findEl(tok); if(el){ panel.appendChild(el); count++; } });
+    if(!panel.children.length) return;
+    panels[d.key]=panel; wrap.insertBefore(panel, footer);
+    const btn=document.createElement("button"); btn.className="tab"; btn.dataset.tab=d.key;
+    btn.innerHTML=d.label+'<span class="cnt">'+count+'</span>';
+    btn.addEventListener("click",()=>activate(d.key));
+    tabbar.appendChild(btn);
   });
-  document.querySelector(".wrap").insertBefore(nav, sections[0]);
+  wrap.insertBefore(tabbar, wrap.querySelector(".tabpanel"));
+  function activate(key){
+    if(!panels[key]) key=DOMAINS.find(d=>panels[d.key]).key;
+    Object.entries(panels).forEach(([k,p])=>p.classList.toggle("active",k===key));
+    [...tabbar.children].forEach(b=>b.classList.toggle("active",b.dataset.tab===key));
+    state.active_tab=key; save();
+    if(location.hash!=="#"+key) history.replaceState(null,"","#"+key);
+  }
+  const fromHash=location.hash.slice(1);
+  activate(panels[fromHash]?fromHash:(panels[state.active_tab]?state.active_tab:"overview"));
 })();
 // כפתור חזרה למעלה
 (function(){ const b=document.createElement("button"); b.className="backtop"; b.textContent="↑"; b.title="למעלה";
@@ -997,10 +1054,43 @@ def main():
   <div class="hero">
     <div class="kpi"><div class="k-lbl">מחיר ששולם</div><div class="k-val">{shekel(paid_price)}</div><div class="k-sub">חוזה {pur.get('contract_signed','')}</div></div>
     <div class="kpi"><div class="k-lbl">שווי מוערך (טווח)</div><div class="k-val">{shekel(val_low)}–{shekel(val_high)}</div><div class="k-sub"><span class="badge {confidence_badge_class}">ביטחון {val.get('confidence','—')}</span></div></div>
-    <div class="kpi"><div class="k-lbl">רווח על הנייר (טווח)</div><div class="k-val" style="color:{equity_color}">{equity_range_txt}</div><div class="k-sub">≈ +{equity_pct}% · מותנה בנעילת מכירה</div></div>
+    <div class="kpi"><div class="k-lbl">רווח על הנייר (טווח)</div><div class="k-val" style="color:{equity_color}">{equity_range_txt}</div><div class="k-sub">≈ +{equity_pct}% · מימוש ממכירה מ-{restr.get('sale_allowed_from','~2030')}</div></div>
     <div class="kpi"><div class="k-lbl">התשלום הבא</div><div class="k-val" id="hero-nextpay">—</div><div class="k-sub" id="hero-nextpay-sub">לוח החוזה</div></div>
     <div class="kpi"><div class="k-lbl">עד מסירה משוערת</div><div class="k-val" id="hero-handover">—</div><div class="k-sub">תשלום אחרון 30/09/28</div></div>
   </div>"""
+
+    # ----- תוכנית הדירה האמיתית (render מה-PDF) + מהלכי השבחה -----
+    plan_img = "assets/plan-128A5.png"
+    plan_exists = os.path.exists(os.path.join(HERE, plan_img))
+    plan_visual = (
+        f'<img src="{plan_img}" alt="תוכנית מכר 128A5" loading="lazy" '
+        'style="width:100%;border-radius:10px;border:1px solid var(--line);background:#fff">'
+        if plan_exists else
+        '<div class="note">התוכנית המלאה מוצגת בסקשן "מיקום, תוכניות ומסמכים רשמיים". הקובץ פרטי ואינו מתפרסם.</div>'
+    )
+    floorplan_html = (
+        '<div class="card" style="margin-top:12px">'
+        '<h3>🗺️ תוכנית הדירה (128A5) + מהלכי השבחה</h3>'
+        + plan_visual +
+        '<div class="pillrow" style="margin-top:10px">'
+        '<span class="pill" style="border-color:#f5c451;color:#fde9b8">🏆 מטבח → לפתוח לסלון/פינת אוכל (השבחה מקסימלית)</span>'
+        '<span class="pill" style="border-color:#22d3ee;color:#bae6fd">🚽 שירותי 113/173 (אסלה) — לרוב עדיף להשאיר כ-WC אורחים</span>'
+        '<span class="pill" style="border-color:#f87171;color:#fecaca">⛔ ממ"ד — קירות בטון, אסור לגעת</span>'
+        '</div>'
+        '<div class="note">התוכנית האמיתית (מהדורה 7, 04.11.25) מוצגת מקומית — הקובץ פרטי (מסונן ב-git). לביצוע — לאמת מול התוכנית המקורית ומהנדס.</div>'
+        '</div>'
+    )
+
+    # ----- אסטרטגיית השבחת ערך (מבוסס תוכנית) -----
+    vstrat = reno.get("value_strategy", {})
+    value_strategy_html = ""
+    if vstrat.get("items"):
+        vitems = "".join(f"<li>{it}</li>" for it in vstrat["items"])
+        value_strategy_html = (
+            '<div class="card" style="border-color:#16a34a;background:#06281f;margin-top:12px">'
+            f'<h3 style="color:#bbf7d0">{vstrat.get("title","")}</h3>'
+            f'<ul class="flat" style="margin:0">{vitems}</ul></div>'
+        )
 
     body = f"""
   <header>
@@ -1078,7 +1168,7 @@ def main():
     </div>
   </section>
 
-  <div class="grid">
+  <div class="grid" id="value-summary">
     <div class="card"><h3>מחיר רכישה</h3><div class="big">{shekel(paid_price)}</div><div class="sub">חוזה {pur.get('contract_signed','')} · ~{pur.get('price_per_sqm_paid','—'):,} ₪/מ"ר · מטבח לא כלול</div></div>
     <div class="card"><h3>שווי שוק מוערך</h3><div class="big">{shekel(est)}</div><div class="sub">טווח {shekel(val.get('estimated_value_low_nis'))}–{shekel(val.get('estimated_value_high_nis'))} · ביטחון {val.get('confidence','—')}</div></div>
     <div class="card"><h3>רווח על הנייר</h3><div class="big" style="color:{equity_color}">+{shekel(equity)} <span style="font-size:15px">(+{equity_pct}%)</span></div><div class="sub">מול המחיר ששולם · עודכן {val.get('last_updated','')}</div></div>
@@ -1137,8 +1227,9 @@ def main():
     </div>
     <div class="card scroll" style="margin-top:12px">
       <h3>נכסים להשוואה — סוג המקור תמיד גלוי</h3>
-      <div class="metric-row"><div class="metric"><span>השוואות עם מחיר+שטח</span><strong id="comp-count">0</strong></div><div class="metric"><span>ממוצע גולמי</span><strong id="comp-avg">—</strong></div></div>
-      <table id="comparables-table"><tr><th>תאריך</th><th>כתובת</th><th>חדרים</th><th>מ״ר</th><th>מחיר</th><th>₪/מ״ר</th><th>סוג</th><th>ביטחון</th><th>מקור</th><th></th></tr></table>
+      <div class="sub" style="margin-bottom:8px">רק שורות מסומנות <b>בר-השוואה</b> נכנסות לממוצע. נתונים מצרפיים/שכונות סמוכות מוצגים כרקע ומוחשכים. ₪/מ״ר מחושב כשמוזן שטח.</div>
+      <div class="metric-row"><div class="metric"><span>בני-השוואה</span><strong id="comp-count">0</strong></div><div class="metric"><span>ממוצע מחיר (בני-השוואה)</span><strong id="comp-price-avg">—</strong></div><div class="metric"><span>ממוצע ₪/מ״ר (בני-השוואה)</span><strong id="comp-avg">—</strong></div></div>
+      <table id="comparables-table"><tr><th>תאריך</th><th>כתובת</th><th>חדרים</th><th>מ״ר</th><th>מחיר</th><th>₪/מ״ר</th><th>סוג</th><th>ביטחון</th><th>בר-השוואה</th><th>מקור</th><th></th></tr></table>
       <button class="addbtn" id="add-comp">+ הוסף השוואה</button>
     </div>
     <div class="card">
@@ -1192,6 +1283,8 @@ def main():
   <section>
     <h2>🛠️ אפשרויות שיפוץ — בחר מה לבצע</h2>
     <div class="sub">{reno.get('scope_note','')}</div>
+    {floorplan_html}
+    {value_strategy_html}
     <div class="warn">⚠️ הזזת קיר מותנית: רק אם הקיר אינו נושא/ממ"ד. הקבלן לא מבצע דבר — כל איש מקצוע עצמאי.</div>
     <div class="warn" style="background:#06281f;border-color:#22c55e;color:#bbf7d0">🔧 פריט עם <b>לבד</b> = ניתן להתקנה עצמית (יש לך ידיים טובות). סמן "לבד" כדי לשלם רק על המוצר. 🛒 = מחיר בארץ · 📦 = עלי אקספרס (זול בהרבה; מכס: עד $75 פטור, מעל — 17% מע"מ בלבד).</div>
     <div class="warn" style="background:#052e1a;border-color:#16a34a;color:#bbf7d0"><span class="vb vb-h">📈 מעלה ערך</span> = משדרג משמעותית את שווי הדירה למכירה (מטבח, אמבטיות, מיזוג). <span class="vb vb-m">📈 ערך בינוני</span> = תורם. ללא תגית = בעיקר נוחות/אסתטיקה, החזר נמוך במכירה. 💡 בדירה חדשה כדאי למקד תקציב בפריטי "מעלה ערך" ולא להגזים בהתאמה אישית (לא תמיד מחזירה את עלותה).</div>
@@ -1309,7 +1402,7 @@ def main():
     <h2>🔁 פלופ — מסלולי שדרוג עתידיים</h2>
     <div class="sub">{up.get('preferences','')}</div>
     <div class="warn">💡 {up.get('current_equity_note','')}</div>
-    <div class="stale stale-bad">🔒 מימוש הרווח והשדרוג <b>מותנים בתום נעילת המכירה של מחיר למשתכן — שטרם אומתה</b> (ראו סקשן "מגבלות מחיר למשתכן"). עד לאימות סעיף ההגבלה בחוזה, זהו תרחיש עתידי בלבד.</div>
+    <div class="stale stale-warn">🔒 מימוש הרווח והשדרוג מותנה ב<b>תום נעילת המכירה: 18 חודשים אחרי קבלת המפתח → חלון מכירה חופשי מ-{restr.get('sale_allowed_from','~2030')}</b> (ראו "מגבלות מחיר למשתכן"). מומלץ לאמת ניסוח/קנס בחוזה.</div>
     {tiers_html}
     <div class="src">{srcs(up.get('sources'))}</div>
   </section>
