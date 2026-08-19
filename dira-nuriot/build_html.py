@@ -647,7 +647,7 @@ const ca=document.getElementById("collapse-all"); if(ca) ca.addEventListener("cl
 const DOMAINS=[
   {key:"overview", label:"סקירה", match:["#value-summary","דברים לביצוע","משימות לביצוע"]},
   {key:"finance", label:"כספים", match:["נתוני שוק","לוח תשלומים","תחזית תזרים","הערכת שווי"]},
-  {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה","לו\"ז ביצוע","מדריך אנשי מקצוע","ספקים והצעות","רשימת קניות"]},
+  {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","רעיונות עיצוב לפי חדר","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה","לו\"ז ביצוע","מדריך אנשי מקצוע","ספקים והצעות","רשימת קניות"]},
   {key:"handover", label:"מסירה", match:["מסירה ובדק בית"]},
   {key:"property", label:"נכס וסביבה", match:["מיקום, תוכניות","מידות חדרים","סקירת שכונה","פלופ","מגבלות מחיר"]},
   {key:"system", label:"מערכת", match:["מצב מערכת"]},
@@ -1092,6 +1092,38 @@ def main():
             f'<ul class="flat" style="margin:0">{vitems}</ul></div>'
         )
 
+    # ----- רעיונות עיצוב לפי חדר -----
+    # קישורי השראה בלבד (Pinterest + Google Images בעברית) ולא תמונות מוטמעות —
+    # שומר על index.html עצמאי/אופליין ומונע קישורים שבורים לספקים ספציפיים.
+    ridea = reno.get("room_ideas", {})
+    room_ideas_section = ""
+    if ridea.get("rooms"):
+        cards = []
+        for r in ridea["rooms"]:
+            ideas = "".join(f"<li>{it}</li>" for it in r.get("ideas", []))
+            links = "".join(
+                f'<a class="addbtn" href="{lk.get("url","#")}" target="_blank" rel="noopener" '
+                f'style="display:inline-block;text-decoration:none;margin:4px 4px 0 0">{lk.get("label","")} ↗</a>'
+                for lk in r.get("links", [])
+            )
+            note = (f'<div class="note" style="margin-bottom:8px">{r.get("note","")}</div>'
+                    if r.get("note") else "")
+            cards.append(
+                '<div class="card">'
+                f'<h3>{r.get("emoji","")} {r.get("name","")}</h3>'
+                f'<div class="sub" style="margin-bottom:6px">📐 {r.get("dims","")}</div>'
+                f'{note}'
+                f'<ul class="flat" style="margin:0 0 10px">{ideas}</ul>'
+                f'<div class="pillrow">{links}</div>'
+                '</div>'
+            )
+        room_ideas_section = f"""
+  <section>
+    <h2>💡 רעיונות עיצוב לפי חדר</h2>
+    <div class="sub">{ridea.get('intro','')}</div>
+    <div class="grid" style="margin-top:10px">{''.join(cards)}</div>
+  </section>"""
+
     body = f"""
   <header>
     {photo_html}
@@ -1286,7 +1318,7 @@ def main():
     {floorplan_html}
     {value_strategy_html}
     <div class="warn">⚠️ הזזת קיר מותנית: רק אם הקיר אינו נושא/ממ"ד. הקבלן לא מבצע דבר — כל איש מקצוע עצמאי.</div>
-    <div class="warn" style="background:#06281f;border-color:#22c55e;color:#bbf7d0">🔧 פריט עם <b>לבד</b> = ניתן להתקנה עצמית (יש לך ידיים טובות). סמן "לבד" כדי לשלם רק על המוצר. 🛒 = מחיר בארץ · 📦 = עלי אקספרס (זול בהרבה; מכס: עד $75 פטור, מעל — 17% מע"מ בלבד).</div>
+    <div class="warn" style="background:#06281f;border-color:#22c55e;color:#bbf7d0">🔧 פריט עם <b>לבד</b> = ניתן להתקנה עצמית (יש לך ידיים טובות). סמן "לבד" כדי לשלם רק על המוצר. 🛒 = מחיר בארץ · 📦 = עלי אקספרס (זול בהרבה; מכס: עד $75 פטור, $75–500 — מע"מ 18% בלבד).</div>
     <div class="warn" style="background:#052e1a;border-color:#16a34a;color:#bbf7d0"><span class="vb vb-h">📈 מעלה ערך</span> = משדרג משמעותית את שווי הדירה למכירה (מטבח, אמבטיות, מיזוג). <span class="vb vb-m">📈 ערך בינוני</span> = תורם. ללא תגית = בעיקר נוחות/אסתטיקה, החזר נמוך במכירה. 💡 בדירה חדשה כדאי למקד תקציב בפריטי "מעלה ערך" ולא להגזים בהתאמה אישית (לא תמיד מחזירה את עלותה).</div>
     <div class="card" style="margin-top:12px">
       <div id="options-list"></div>
@@ -1304,6 +1336,7 @@ def main():
       <div class="pillrow" id="pros-needed"></div>
     </div>
   </section>
+{room_ideas_section}
 
   <section>
     <h2>✅ משימות לביצוע (מתעדכן לפי האפשרויות)</h2>
