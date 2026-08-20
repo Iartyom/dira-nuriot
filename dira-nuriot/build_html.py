@@ -239,6 +239,23 @@ footer { border-top:1px solid var(--line); padding-top:18px; }
 .tabpanel > section:first-child { margin-top:20px; }
 @media print { .tabs { display:none !important; } .tabpanel { display:block !important; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } *{ transition:none !important; } }
+/* גלריית תמונות השראה לפי חדר (נשמר מקומית) */
+.saved-filter { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:4px 0 2px; }
+.chip-toggle { font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; color:var(--muted);
+  background:var(--card2); border:1px solid var(--line); border-radius:999px; padding:5px 12px; }
+.chip-toggle.on { color:#04263a; background:linear-gradient(135deg,#f5c451,#f59e0b); border-color:transparent; }
+.room-imgs { display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:6px; margin:10px 0 8px; }
+.rimg { position:relative; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--bg); }
+.rimg.liked { border-color:#f5c451; box-shadow:0 0 0 2px rgba(245,196,81,.35); }
+.rimg img { width:100%; height:78px; object-fit:cover; display:block; cursor:zoom-in; }
+.rimg.zoom { grid-column:1 / -1; }
+.rimg.zoom img { height:auto; max-height:360px; object-fit:contain; cursor:zoom-out; background:#000; }
+.rimg-bar { position:absolute; top:3px; inset-inline-start:3px; display:flex; gap:3px; }
+.rimg-btn { font-size:12px; line-height:1; cursor:pointer; border:none; border-radius:6px; padding:3px 5px;
+  background:rgba(4,20,34,.72); color:#e6edf6; }
+.rimg-btn.like:hover { background:rgba(245,196,81,.9); color:#04263a; }
+.rimg-btn.del:hover { background:rgba(220,38,38,.9); }
+@media print { .room-img-input, .saved-filter, .rimg-bar { display:none !important; } }
 """
 
 JS = r"""
@@ -484,6 +501,64 @@ function addShopRow(table, d){
   if(saved && saved.length) saved.forEach(d=>addShopRow(t,d));
   else (DATA.shopping_seed||[]).forEach(it=>addShopRow(t,{item:it}));
   document.getElementById("add-shop").addEventListener("click",()=>addShopRow(t,{}));
+})();
+
+// ---------- תמונות השראה לפי חדר (נשמר מקומית, offline; נכנס לגיבוי) ----------
+// המשתמש מוסיף תמונות משלו (מ-Pinterest/ספק) → מוקטנות ל-dataURL ונשמרות ב-state.
+// כך אין תלות ברשת, ולא מוטמעות תמונות מוגנות-זכויות בריפו הפומבי.
+(function(){
+  state.room_images = state.room_images || {};
+  let savedOnly = false;
+  const listFor = k => (state.room_images[k] = state.room_images[k] || []);
+  function persist(){ try { save(); return true; }
+    catch(e){ alert("האחסון המקומי מלא — מחק תמונות או ייצא גיבוי ונקה."); return false; } }
+  function downscale(file, cb){
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = function(){ const max = 900; let w = img.width, h = img.height;
+      if (w > max || h > max){ const r = Math.min(max/w, max/h); w = Math.round(w*r); h = Math.round(h*r); }
+      const c = document.createElement("canvas"); c.width = w; c.height = h;
+      c.getContext("2d").drawImage(img, 0, 0, w, h); URL.revokeObjectURL(url);
+      cb(c.toDataURL("image/jpeg", 0.72)); };
+    img.onerror = function(){ URL.revokeObjectURL(url); alert("קובץ תמונה לא תקין."); };
+    img.src = url;
+  }
+  function updateCount(){ const n = Object.values(state.room_images)
+      .reduce((a, arr) => a + arr.filter(x => x.liked).length, 0);
+    const el = document.getElementById("saved-img-count"); if (el) el.textContent = n; }
+  function render(container){
+    const k = container.getAttribute("data-room"), items = listFor(k);
+    container.innerHTML = "";
+    const shown = items.filter(it => !savedOnly || it.liked);
+    if (savedOnly && !shown.length){ container.innerHTML = '<div class="note" style="margin:0">— אין שמורים —</div>'; return; }
+    shown.forEach(it => {
+      const fig = document.createElement("div"); fig.className = "rimg" + (it.liked ? " liked" : "");
+      const im = document.createElement("img"); im.src = it.src; im.loading = "lazy"; im.alt = "השראה";
+      im.addEventListener("click", () => fig.classList.toggle("zoom"));
+      const bar = document.createElement("div"); bar.className = "rimg-bar";
+      const like = document.createElement("button"); like.className = "rimg-btn like";
+      like.textContent = it.liked ? "🔖" : "🏷️"; like.title = it.liked ? "הסר משמורים" : "שמור להשראה";
+      like.addEventListener("click", () => { it.liked = !it.liked; if (persist()){ render(container); updateCount(); } });
+      const del = document.createElement("button"); del.className = "rimg-btn del"; del.textContent = "✕"; del.title = "מחק";
+      del.addEventListener("click", () => { const idx = items.indexOf(it); if (idx >= 0) items.splice(idx, 1);
+        if (persist()){ render(container); updateCount(); } });
+      bar.appendChild(like); bar.appendChild(del);
+      fig.appendChild(im); fig.appendChild(bar); container.appendChild(fig);
+    });
+  }
+  const renderAll = () => document.querySelectorAll(".room-imgs").forEach(render);
+  document.querySelectorAll(".room-img-input").forEach(inp => {
+    inp.addEventListener("change", () => {
+      const k = inp.getAttribute("data-room"), files = [...inp.files].filter(f => f.type.startsWith("image/"));
+      let pending = files.length; if (!pending){ inp.value = ""; return; }
+      files.forEach(f => downscale(f, src => { listFor(k).push({ src: src, liked: false });
+        if (--pending <= 0 && persist()){ render(document.querySelector('.room-imgs[data-room="' + k + '"]')); updateCount(); } }));
+      inp.value = "";
+    });
+  });
+  const chip = document.getElementById("saved-only-toggle");
+  if (chip) chip.addEventListener("click", () => { savedOnly = !savedOnly;
+    chip.classList.toggle("on", savedOnly); chip.setAttribute("aria-pressed", savedOnly); renderAll(); });
+  renderAll(); updateCount();
 })();
 
 // ---------- מעקב שווי ----------
@@ -1099,7 +1174,8 @@ def main():
     room_ideas_section = ""
     if ridea.get("rooms"):
         cards = []
-        for r in ridea["rooms"]:
+        # מפתח חדר = אינדקס מספרי (יציב, ונמנע מבעיות ציטוט בשמות עם " כמו ממ"ד)
+        for i, r in enumerate(ridea["rooms"]):
             ideas = "".join(f"<li>{it}</li>" for it in r.get("ideas", []))
             links = "".join(
                 f'<a class="addbtn" href="{lk.get("url","#")}" target="_blank" rel="noopener" '
@@ -1115,12 +1191,20 @@ def main():
                 f'{note}'
                 f'<ul class="flat" style="margin:0 0 10px">{ideas}</ul>'
                 f'<div class="pillrow">{links}</div>'
+                f'<div class="room-imgs" data-room="{i}"></div>'
+                '<label class="addbtn filebtn" style="background:var(--card2);color:var(--ink);'
+                'display:inline-block;margin-top:4px">➕ הוסף תמונת השראה'
+                f'<input type="file" accept="image/*" multiple class="room-img-input" data-room="{i}"></label>'
                 '</div>'
             )
         room_ideas_section = f"""
   <section>
     <h2>💡 רעיונות עיצוב לפי חדר</h2>
     <div class="sub">{ridea.get('intro','')}</div>
+    <div class="saved-filter">
+      <button class="chip-toggle" id="saved-only-toggle" aria-pressed="false">🔖 הצג שמורים בלבד (<span id="saved-img-count">0</span>)</button>
+      <span class="note" style="margin:0">מוסיפים תמונות מהמחשב (מ-Pinterest/ספק) → נשמרות מקומית בדפדפן ונכנסות לגיבוי. 🔖 = שמור להשראה. לחיצה על תמונה מגדילה.</span>
+    </div>
     <div class="grid" style="margin-top:10px">{''.join(cards)}</div>
   </section>"""
 
