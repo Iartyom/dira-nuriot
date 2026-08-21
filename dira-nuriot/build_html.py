@@ -249,10 +249,12 @@ footer { border-top:1px solid var(--line); padding-top:18px; }
   border-radius:8px; padding:7px 10px; font-family:inherit; font-size:13px; }
 .cc-go { flex:0 0 auto; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; color:#04263a;
   background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; border-radius:8px; padding:7px 12px; }
-.cc-results, .room-saved { display:grid; grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); gap:6px; margin:6px 0; }
+/* כרטיסי רעיונות רחבים יותר + גלריה גדולה יותר */
+.room-ideas-grid { grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); }
+.cc-results, .room-saved { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; margin:6px 0; }
 .cctile { position:relative; margin:0; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--bg); }
 .cctile.saved { border-color:#f5c451; box-shadow:0 0 0 2px rgba(245,196,81,.35); }
-.cctile img { width:100%; height:84px; object-fit:cover; display:block; cursor:zoom-in; }
+.cctile img { width:100%; height:150px; object-fit:cover; display:block; cursor:zoom-in; }
 .cctile.zoom { grid-column:1 / -1; }
 .cctile.zoom img { height:auto; max-height:420px; object-fit:contain; cursor:zoom-out; background:#000; }
 .cc-bar { position:absolute; top:3px; inset-inline-start:3px; display:flex; gap:3px; }
@@ -1329,7 +1331,7 @@ def main():
       <button class="chip-toggle" id="saved-only-toggle" aria-pressed="false">🔖 הצג שמורים בלבד (<span id="saved-img-count">0</span>)</button>
       <span class="note" style="margin:0">גלריה חיה מ-Openverse (תמונות Creative-Commons, עם קרדיט וקישור למקור) — דורשת אינטרנט. 🔖 = שמור להשראה (נשמר מקומית + בגיבוי). אפשר גם להעלות תמונה משלך.</span>
     </div>
-    <div class="grid" style="margin-top:10px">{''.join(cards)}</div>
+    <div class="grid room-ideas-grid" style="margin-top:10px">{''.join(cards)}</div>
   </section>"""
 
     body = f"""
