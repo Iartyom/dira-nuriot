@@ -266,10 +266,23 @@ footer { border-top:1px solid var(--line); padding-top:18px; }
 .cctile:hover .cc-cred, .cctile.zoom .cc-cred { opacity:1; }
 .cc-msg { grid-column:1 / -1; font-size:12px; color:var(--muted); padding:8px 4px; }
 .cc-msg.dim { opacity:.7; }
-.saved-head { font-size:12px; font-weight:700; color:var(--muted); margin:10px 0 2px; }
-/* מצב "שמורים בלבד" — מסתיר חיפוש/גלריה חיה/העלאה */
-section.saved-only .cc-search, section.saved-only .cc-results, section.saved-only .filebtn { display:none !important; }
-@media print { .cc-search, .room-img-input, .filebtn, .saved-filter, .cc-bar { display:none !important; } }
+/* כרטיס עם לשוניות (עיצוב ג') */
+.rc-head { display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.savecount { font-size:12px; font-weight:700; color:#f5c451; white-space:nowrap; }
+.rc-seg { display:flex; gap:3px; background:var(--bg); border:1px solid var(--line); border-radius:10px;
+  padding:3px; margin:11px 0 6px; }
+.rc-seg button { flex:1 1 0; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; color:var(--muted);
+  background:transparent; border:none; border-radius:7px; padding:6px 6px; white-space:nowrap; }
+.rc-seg button:hover { color:var(--ink); }
+.rc-seg button.on { color:#04263a; background:linear-gradient(135deg,var(--accent),var(--accent2)); }
+.rc-panel { display:none; }
+.rc-panel.on { display:block; }
+/* מצב "שמורים בלבד" — כל הכרטיסים עוברים ללשונית שמורים */
+section.saved-only .rc-seg { display:none; }
+section.saved-only .rc-panel { display:none !important; }
+section.saved-only .rc-panel[data-panel="saved"] { display:block !important; }
+@media print { .cc-search, .room-img-input, .filebtn, .saved-filter, .cc-bar, .rc-seg { display:none !important; }
+  .rc-panel { display:block !important; } }
 """
 
 JS = r"""
@@ -535,8 +548,14 @@ function addShopRow(table, d){
   const isSaved = (k,it) => savedFor(k).some(s => same(s,it));
   function persist(){ try { save(); return true; }
     catch(e){ alert("האחסון המקומי מלא — הסר תמונות שמורות או ייצא גיבוי."); return false; } }
-  function updateCount(){ const n = Object.values(state.room_saved).reduce((a,arr)=>a+arr.length,0);
-    const el = document.getElementById("saved-img-count"); if (el) el.textContent = n; }
+  function updateCount(){
+    // מונה כללי + מונה לכל חדר (לשונית + תגית בכותרת)
+    document.querySelectorAll(".rc-savedn").forEach(s => s.textContent = (state.room_saved[s.dataset.room]||[]).length);
+    document.querySelectorAll(".savecount").forEach(s => { const b = s.querySelector("b");
+      if (b) b.textContent = (state.room_saved[s.dataset.count]||[]).length; });
+    const n = Object.values(state.room_saved).reduce((a,arr)=>a+arr.length,0);
+    const el = document.getElementById("saved-img-count"); if (el) el.textContent = n;
+  }
 
   function credLink(item){
     const a = document.createElement("a"); a.className = "cc-cred"; a.target = "_blank"; a.rel = "noopener nofollow";
@@ -624,27 +643,20 @@ function addShopRow(table, d){
   let savedOnly = false;
   if (chip) chip.addEventListener("click", () => { savedOnly = !savedOnly; chip.classList.toggle("on", savedOnly);
     chip.setAttribute("aria-pressed", savedOnly); if (section) section.classList.toggle("saved-only", savedOnly); });
+  // לשוניות הכרטיס (עיצוב ג'): רעיונות · גלריה · שמורים.
+  // הגלריה החיה נטענת רק בפתיחה ראשונה של לשונית "גלריה" — חוסך קריאות API.
+  document.querySelectorAll(".rc-seg").forEach(seg => {
+    const k = seg.dataset.room, card = seg.closest(".card");
+    seg.querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => {
+      seg.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === btn));
+      card.querySelectorAll(".rc-panel").forEach(p => p.classList.toggle("on", p.dataset.panel === btn.dataset.tab));
+      if (btn.dataset.tab === "gal"){ const box = card.querySelector(".cc-results");
+        if (box && !box.dataset.loaded) search(k, box.dataset.search); }
+    }));
+  });
   // render saved on load
   document.querySelectorAll(".room-saved").forEach(b => renderSaved(b.dataset.room));
   updateCount();
-  // טעינת הגלריה החיה כשכרטיס נכנס לתצוגה — מבוסס scroll/getBoundingClientRect
-  // (ולא IntersectionObserver, שאינו אמין בטאב שאינו בפוקוס). חוסך קריאות API מיותרות.
-  function maybeLoadVisible(){
-    document.querySelectorAll('.cc-results').forEach(b => {
-      if (b.dataset.loaded) return;
-      const card = b.closest('.card'); if (!card) return;
-      const r = card.getBoundingClientRect();
-      // height>0 מוודא שהטאב פעיל (בטאב מוסתר getBoundingClientRect מחזיר 0)
-      if (r.height > 0 && r.top < window.innerHeight + 300 && r.bottom > -300)
-        search(b.dataset.room, b.dataset.search);
-    });
-  }
-  window.addEventListener('scroll', maybeLoadVisible, {passive:true});
-  window.addEventListener('resize', maybeLoadVisible);
-  // כשמחליפים טאב (הכרטיסים מקבלים גובה) — בדיקה חוזרת
-  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setTimeout(maybeLoadVisible, 80)));
-  maybeLoadVisible();
-  setTimeout(maybeLoadVisible, 400); // תופס מצב שבו טאב השיפוץ פעיל כבר בטעינה (דרך #hash)
 })();
 
 // ---------- מעקב שווי ----------
@@ -1271,24 +1283,42 @@ def main():
             note = (f'<div class="note" style="margin-bottom:8px">{r.get("note","")}</div>'
                     if r.get("note") else "")
             q = (r.get("search_en", "") or "").replace('"', '&quot;')
+            # כרטיס עם לשוניות (עיצוב ג'): רעיונות · גלריה · שמורים.
+            # הגלריה החיה נטענת רק כשפותחים את לשונית "גלריה" (חוסך קריאות API).
             cards.append(
                 '<div class="card">'
-                f'<h3>{r.get("emoji","")} {r.get("name","")}</h3>'
-                f'<div class="sub" style="margin-bottom:6px">📐 {r.get("dims","")}</div>'
+                '<div class="rc-head">'
+                f'<div><h3 style="margin:0">{r.get("emoji","")} {r.get("name","")}</h3>'
+                f'<div class="sub" style="margin-top:3px">📐 {r.get("dims","")}</div></div>'
+                f'<span class="savecount" data-count="{i}">🔖 <b>0</b></span>'
+                '</div>'
                 f'{note}'
+                f'<div class="rc-seg" data-room="{i}">'
+                f'<button class="on" data-tab="ideas">🎨 רעיונות</button>'
+                f'<button data-tab="gal">🖼️ גלריה</button>'
+                f'<button data-tab="saved">🔖 שמורים (<span class="rc-savedn" data-room="{i}">0</span>)</button>'
+                '</div>'
+                # לשונית רעיונות
+                '<div class="rc-panel on" data-panel="ideas">'
                 f'<ul class="flat" style="margin:0 0 10px">{ideas}</ul>'
                 f'<div class="pillrow">{links}</div>'
-                # שורת חיפוש לגלריה החיה (Openverse)
+                '</div>'
+                # לשונית גלריה (Openverse)
+                '<div class="rc-panel" data-panel="gal">'
                 '<div class="cc-search">'
                 f'<input class="cc-q" data-room="{i}" value="{q}" placeholder="חיפוש תמונות השראה…">'
                 f'<button class="cc-go" data-room="{i}">🔎 חפש</button>'
                 '</div>'
                 f'<div class="cc-results" data-room="{i}" data-search="{q}"></div>'
-                '<div class="saved-head">🔖 שמורים בחדר זה:</div>'
+                '<div class="pillrow" style="margin-top:8px">' + links + '</div>'
+                '</div>'
+                # לשונית שמורים
+                '<div class="rc-panel" data-panel="saved">'
                 f'<div class="room-saved" data-room="{i}"></div>'
                 '<label class="addbtn filebtn" style="background:var(--card2);color:var(--ink);'
-                'display:inline-block;margin-top:6px">➕ העלה תמונה משלך'
+                'display:inline-block;margin-top:8px">➕ העלה תמונה משלך'
                 f'<input type="file" accept="image/*" multiple class="room-img-input" data-room="{i}"></label>'
+                '</div>'
                 '</div>'
             )
         room_ideas_section = f"""
