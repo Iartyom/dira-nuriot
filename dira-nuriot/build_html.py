@@ -244,6 +244,11 @@ footer { border-top:1px solid var(--line); padding-top:18px; }
 .chip-toggle { font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; color:var(--muted);
   background:var(--card2); border:1px solid var(--line); border-radius:999px; padding:5px 12px; }
 .chip-toggle.on { color:#04263a; background:linear-gradient(135deg,#f5c451,#f59e0b); border-color:transparent; }
+.src-picker { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:8px 0 2px; padding:9px 12px;
+  background:linear-gradient(180deg,#0f2137,#0d1b2f); border:1px solid var(--line); border-radius:12px; font-size:13px; }
+.src-picker input { flex:1; min-width:220px; background:#0a1728; border:1px solid #243b5b; color:var(--ink);
+  border-radius:8px; padding:6px 10px; font-family:inherit; font-size:12.5px; }
+.src-picker a { color:var(--accent); text-decoration:none; font-weight:700; }
 .cc-search { display:flex; gap:6px; margin:12px 0 8px; }
 .cc-q { flex:1; min-width:0; background:var(--bg); border:1px solid var(--line); color:var(--ink);
   border-radius:8px; padding:7px 10px; font-family:inherit; font-size:13px; }
@@ -252,6 +257,12 @@ footer { border-top:1px solid var(--line); padding-top:18px; }
 /* כרטיסי רעיונות רחבים יותר + גלריה גדולה יותר */
 .room-ideas-grid { grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); }
 .cc-results, .room-saved { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; margin:6px 0; }
+/* גלילת תמונות בתוך הכרטיס (pane בגובה קבוע עם סקרול משלו) */
+.cc-results { max-height:380px; overflow-y:auto; overflow-x:hidden; padding:8px; align-content:start;
+  border:1px solid var(--line); border-radius:10px; background:rgba(4,12,22,.35); overscroll-behavior:contain; }
+.cc-results::-webkit-scrollbar { width:10px; }
+.cc-results::-webkit-scrollbar-thumb { background:#28405f; border-radius:8px; border:2px solid transparent; background-clip:padding-box; }
+.cc-results::-webkit-scrollbar-track { background:transparent; }
 .cctile { position:relative; margin:0; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--bg); }
 .cctile.saved { border-color:#f5c451; box-shadow:0 0 0 2px rgba(245,196,81,.35); }
 .cctile img { width:100%; height:150px; object-fit:cover; display:block; cursor:zoom-in; }
@@ -562,13 +573,33 @@ function addShopRow(table, d){
   function credLink(item){
     const a = document.createElement("a"); a.className = "cc-cred"; a.target = "_blank"; a.rel = "noopener nofollow";
     a.href = item.srcurl || item.licurl || "#";
-    a.textContent = (item.by ? item.by + " · " : "") + "CC " + (item.lic||"") + " ↗"; return a;
+    const licTxt = item.lic === "Pexels" ? "Pexels" : ("CC " + (item.lic||""));
+    a.textContent = (item.by ? item.by + " · " : "") + licTxt + " ↗"; return a;
+  }
+  // מנרמל תוצאה ממקור (Openverse / Pexels) לפריט אחיד
+  function ovMap(res){ return { t:"cc", thumb:res.thumbnail, full:res.url||res.thumbnail, title:res.title||"",
+    by:res.creator||"", lic:(res.license||"").toUpperCase(), licurl:res.license_url||"",
+    src:res.source||"", srcurl:res.foreign_landing_url||"" }; }
+  function pxMap(p){ const s = p.src||{}; return { t:"cc", thumb:s.medium||s.small||s.original, full:s.large||s.original,
+    title:p.alt||"", by:p.photographer||"", lic:"Pexels", licurl:p.url||"", src:"pexels", srcurl:p.url||"" }; }
+  // מקור התמונות: Pexels אם הוזן מפתח (איכותי, ממוקד עיצוב פנים), אחרת Openverse (חינם, ללא מפתח)
+  async function fetchImages(q, page){
+    const key = (state.pexels_key||"").trim();
+    if (key){
+      const r = await fetch("https://api.pexels.com/v1/search?query=" + encodeURIComponent(q + " interior")
+        + "&per_page=20&page=" + page + "&orientation=landscape", {headers:{Authorization:key}});
+      if (!r.ok) throw new Error("Pexels " + r.status);
+      const j = await r.json();
+      return { items:(j.photos||[]).map(pxMap), pageCount: Math.max(1, Math.ceil((j.total_results||0)/20)) };
+    }
+    const r = await fetch("https://api.openverse.org/v1/images/?q=" + encodeURIComponent(q)
+      + "&page_size=20&page=" + page + "&mature=false", {headers:{Accept:"application/json"}});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    return { items:(j.results||[]).filter(x=>x.thumbnail).map(ovMap), pageCount: j.page_count||1 };
   }
   // ----- גלריה חיה -----
-  function tileCC(k, res){
-    const item = { t:"cc", thumb:res.thumbnail, full:res.url||res.thumbnail, title:res.title||"",
-      by:res.creator||"", lic:(res.license||"").toUpperCase(), licurl:res.license_url||"",
-      src:res.source||"", srcurl:res.foreign_landing_url||"" };
+  function tileCC(k, item){
     const fig = document.createElement("figure"); fig.className = "cctile";
     const im = document.createElement("img"); im.src = item.thumb; im.loading = "lazy"; im.alt = esc(item.title);
     im.addEventListener("click", () => fig.classList.toggle("zoom"));
@@ -583,20 +614,34 @@ function addShopRow(table, d){
     fig.appendChild(im); fig.appendChild(bar); fig.appendChild(credLink(item));
     return fig;
   }
-  async function search(k, q){
+  // גלילה אינסופית: reset=true חיפוש חדש; reset=false טעינת עמוד הבא (append)
+  async function search(k, q, reset){
     const box = document.querySelector('.cc-results[data-room="'+k+'"]'); if (!box) return;
-    box.dataset.loaded = "1"; box.innerHTML = '<div class="cc-msg">טוען תמונות…</div>';
+    if (reset === undefined) reset = true;
+    if (box.dataset.loading === "1") return;
+    if (reset){ box.dataset.q = q; box.dataset.page = "0"; box.dataset.more = "1"; box.innerHTML = ""; }
+    if (box.dataset.more === "0") return;
+    const page = parseInt(box.dataset.page || "0", 10) + 1;
+    box.dataset.loading = "1"; box.dataset.loaded = "1";
+    const loader = document.createElement("div"); loader.className = "cc-msg loader"; loader.textContent = "טוען תמונות…";
+    box.appendChild(loader);
     try {
-      const url = "https://api.openverse.org/v1/images/?q=" + encodeURIComponent(q) + "&page_size=12&mature=false";
-      const r = await fetch(url, {headers:{Accept:"application/json"}});
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      const results = (await r.json()).results || [];
-      box.innerHTML = "";
-      if (!results.length){ box.innerHTML = '<div class="cc-msg">לא נמצאו תמונות — נסו שאילתה אחרת או Pinterest/Google.</div>'; return; }
-      results.forEach(res => { if (res.thumbnail) box.appendChild(tileCC(k,res)); });
+      const { items, pageCount } = await fetchImages(box.dataset.q, page);
+      loader.remove();
+      if (page === 1 && !items.length){
+        box.innerHTML = '<div class="cc-msg">לא נמצאו תמונות — נסו שאילתה אחרת או Pinterest/Google.</div>';
+        box.dataset.more = "0"; return;
+      }
+      items.forEach(it => box.appendChild(tileCC(k, it)));
+      box.dataset.page = String(page); box.dataset.more = (page < pageCount) ? "1" : "0";
+      if (box.dataset.more === "0"){ const end = document.createElement("div"); end.className = "cc-msg dim";
+        end.textContent = "— סוף התוצאות —"; box.appendChild(end); }
     } catch(e){
-      box.innerHTML = '<div class="cc-msg">הגלריה החיה לא זמינה כרגע (' + esc(e.message) + '). נסו שוב, או Pinterest/Google למעלה. (דורש אינטרנט)</div>';
-    }
+      loader.remove();
+      const m = document.createElement("div"); m.className = "cc-msg";
+      m.textContent = "הגלריה לא זמינה (" + esc(e.message) + "). נסו שוב, או Pinterest/Google. (דורש אינטרנט)";
+      box.appendChild(m);
+    } finally { box.dataset.loading = "0"; }
   }
   // ----- שמורים (CC + העלאות) -----
   function renderSaved(k){
@@ -656,9 +701,36 @@ function addShopRow(table, d){
         if (box && !box.dataset.loaded) search(k, box.dataset.search); }
     }));
   });
+  // בוחר מקור התמונות (Pexels/Openverse)
+  (function(){
+    const inp = document.getElementById("px-key"), btn = document.getElementById("px-save"),
+          st2 = document.getElementById("px-status");
+    if (!inp) return;
+    const status = () => { st2.textContent = (state.pexels_key && state.pexels_key.trim())
+      ? "מקור נוכחי: Pexels ✓ (איכותי)" : "מקור נוכחי: Openverse (חינם)"; };
+    if (state.pexels_key) inp.value = state.pexels_key;
+    status();
+    btn.addEventListener("click", () => {
+      state.pexels_key = inp.value.trim(); save(); status();
+      // אפס וטען מחדש גלריות שכבר נטענו — מהמקור החדש
+      document.querySelectorAll('.cc-results[data-loaded="1"]').forEach(box => {
+        box.dataset.loaded = ""; box.dataset.page = "0"; box.dataset.more = "1"; box.innerHTML = "";
+        if (box.offsetParent) search(box.dataset.room, box.dataset.q, true);
+      });
+    });
+  })();
   // render saved on load
   document.querySelectorAll(".room-saved").forEach(b => renderSaved(b.dataset.room));
   updateCount();
+  // גלילה אינסופית בתוך הכרטיס: כל גלריה מאזינה לסקרול של עצמה,
+  // וטוענת עמוד נוסף כשמתקרבים לתחתית ה-pane.
+  function maybeMore(box){
+    if (box.dataset.more !== "1" || box.dataset.loading === "1") return;
+    if (box.scrollTop + box.clientHeight >= box.scrollHeight - 300)
+      search(box.dataset.room, box.dataset.q, false);
+  }
+  document.querySelectorAll(".cc-results").forEach(box =>
+    box.addEventListener("scroll", () => maybeMore(box), {passive:true}));
 })();
 
 // ---------- מעקב שווי ----------
@@ -1329,7 +1401,15 @@ def main():
     <div class="sub">{ridea.get('intro','')}</div>
     <div class="saved-filter">
       <button class="chip-toggle" id="saved-only-toggle" aria-pressed="false">🔖 הצג שמורים בלבד (<span id="saved-img-count">0</span>)</button>
-      <span class="note" style="margin:0">גלריה חיה מ-Openverse (תמונות Creative-Commons, עם קרדיט וקישור למקור) — דורשת אינטרנט. 🔖 = שמור להשראה (נשמר מקומית + בגיבוי). אפשר גם להעלות תמונה משלך.</span>
+      <span class="note" style="margin:0">גלריה חיה (דורשת אינטרנט). 🔖 = שמור להשראה (מקומי + בגיבוי). לגלול בתוך הכרטיס לעוד תמונות; אפשר גם להעלות תמונה משלך.</span>
+    </div>
+    <div class="src-picker">
+      <span>🖼️ מקור תמונות:</span>
+      <input id="px-key" type="text" autocomplete="off" placeholder="הדביקו מפתח Pexels לתמונות עיצוב-פנים איכותיות (אופציונלי)">
+      <button id="px-save" class="cc-go">שמור</button>
+      <a href="https://www.pexels.com/api/" target="_blank" rel="noopener">קבלת מפתח חינם ↗</a>
+      <span id="px-status" class="note" style="margin:0"></span>
+      <span class="note" style="margin:0;flex-basis:100%">ללא מפתח: Openverse (חינם, אך פחות ממוקד). המפתח נשמר רק בדפדפן שלכם (localStorage) — לא נשלח לריפו/לאתר.</span>
     </div>
     <div class="grid room-ideas-grid" style="margin-top:10px">{''.join(cards)}</div>
   </section>"""
