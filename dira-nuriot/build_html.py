@@ -733,6 +733,58 @@ function addShopRow(table, d){
     box.addEventListener("scroll", () => maybeMore(box), {passive:true}));
 })();
 
+// ---------- סנכרון ענן (GitHub Gist) ----------
+// שומר/טוען את כל ה-state ל/מ-Gist פרטי. הטוקן וה-Gist ID נשמרים במפתח localStorage
+// נפרד (dira-nuriot-gist) — לא בתוך state — כדי שלא ידלפו לגיבוי או ל-Gist עצמו.
+(function(){
+  const GK = "dira-nuriot-gist", FILE = "dira-nuriot-state.json", API = "https://api.github.com/gists";
+  const tokEl = document.getElementById("gist-token"), idEl = document.getElementById("gist-id"),
+        stEl = document.getElementById("gist-status");
+  if (!tokEl) return;
+  let creds = {}; try { creds = JSON.parse(localStorage.getItem(GK) || "{}"); } catch(e){}
+  if (creds.token) tokEl.value = creds.token;
+  if (creds.id) idEl.value = creds.id;
+  const saveCreds = () => { creds.token = tokEl.value.trim(); creds.id = idEl.value.trim();
+    localStorage.setItem(GK, JSON.stringify(creds)); };
+  const setStatus = (msg, ok) => { stEl.textContent = msg;
+    stEl.style.color = ok === false ? "var(--rose,#fb7185)" : (ok ? "var(--green,#22c55e)" : "var(--muted)"); };
+  function payload(){ const s = Object.assign({}, state); delete s.pexels_key; // לא מסנכרנים מפתחות/סודות
+    return JSON.stringify({ app:"dira-nuriot", updated_at:new Date().toISOString(), state:s }, null, 2); }
+  async function gh(url, opts){ opts = opts || {};
+    opts.headers = Object.assign({ "Authorization":"Bearer "+creds.token, "Accept":"application/vnd.github+json" }, opts.headers||{});
+    const r = await fetch(url, opts);
+    if (!r.ok) throw new Error("GitHub " + r.status + (r.status===401 ? " (טוקן לא תקין/חסר הרשאה)" : r.status===404 ? " (Gist לא נמצא)" : ""));
+    return r.json();
+  }
+  document.getElementById("gist-push").addEventListener("click", async () => {
+    saveCreds(); if (!creds.token){ setStatus("צריך טוקן.", false); return; }
+    setStatus("מעלה…");
+    try {
+      const body = { description:"dira-nuriot dashboard state", files:{ [FILE]:{ content: payload() } } };
+      let j;
+      if (creds.id){ j = await gh(API + "/" + creds.id, { method:"PATCH", body: JSON.stringify(body) }); }
+      else { body.public = false; j = await gh(API, { method:"POST", body: JSON.stringify(body) });
+        creds.id = j.id; idEl.value = j.id; saveCreds(); }
+      setStatus("הועלה לענן ✓ · " + new Date().toLocaleString("he-IL"), true);
+    } catch(e){ setStatus("שגיאה בהעלאה: " + e.message, false); }
+  });
+  document.getElementById("gist-pull").addEventListener("click", async () => {
+    saveCreds(); if (!creds.token || !creds.id){ setStatus("צריך טוקן ו-Gist ID.", false); return; }
+    if (!confirm("הורדה תחליף את הנתונים המקומיים בגרסה מהענן. להמשיך?")) return;
+    setStatus("מוריד…");
+    try {
+      const j = await gh(API + "/" + creds.id);
+      const f = j.files && j.files[FILE]; if (!f) throw new Error("אין קובץ מצב ב-Gist");
+      let content = f.content; if (f.truncated && f.raw_url) content = await (await fetch(f.raw_url)).text();
+      const parsed = JSON.parse(content), incoming = parsed.state || parsed;
+      if (state.pexels_key) incoming.pexels_key = state.pexels_key; // שומרים מפתח מקומי
+      localStorage.setItem(LS, JSON.stringify(incoming));
+      setStatus("הורד ✓ טוען מחדש…", true); setTimeout(() => location.reload(), 700);
+    } catch(e){ setStatus("שגיאה בהורדה: " + e.message, false); }
+  });
+  setStatus(creds.id ? ("מחובר ל-Gist " + creds.id.slice(0,8) + "…") : "לא מחובר עדיין.");
+})();
+
 // ---------- מעקב שווי ----------
 function fmtM(v){ return (v/1000000).toFixed(2)+"M ₪"; }
 function renderValueChart(){
@@ -897,7 +949,7 @@ const DOMAINS=[
   {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","רעיונות עיצוב לפי חדר","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה","לו\"ז ביצוע","מדריך אנשי מקצוע","ספקים והצעות","רשימת קניות"]},
   {key:"handover", label:"מסירה", match:["מסירה ובדק בית"]},
   {key:"property", label:"נכס וסביבה", match:["מיקום, תוכניות","מידות חדרים","סקירת שכונה","פלופ","מגבלות מחיר"]},
-  {key:"system", label:"מערכת", match:["מצב מערכת"]},
+  {key:"system", label:"מערכת", match:["מצב מערכת","סנכרון ענן"]},
 ];
 (function(){
   const wrap=document.querySelector(".wrap"), footer=wrap.querySelector("footer");
@@ -1452,6 +1504,24 @@ def main():
       <div class="sub">הצינור המלא (משיכת שוק → אימות → snapshot → בניית HTML) רץ ב-GitHub Actions — הקישור פותח את המסך שבו לוחצים <b>"Run workflow"</b>. רץ גם אוטומטית כל יום שני.</div>
       <a class="addbtn" href="{p.get('refresh_workflow_url','#')}" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">🔄 הרץ עדכון נתונים (GitHub Actions) ↗</a>
       <div class="note" style="margin-top:8px">מקומית (מריצים את כל הסקריפטים): <code>python dira-nuriot/update_all.py</code></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>☁️ סנכרון ענן (GitHub Gist)</h2>
+    <div class="card">
+      <div class="sub">מסנכרן את כל נתוני הדשבורד (בחירות, שווי, תמונות שמורות) ל-Gist <b>פרטי</b> ב-GitHub, כדי לעבור בין מכשירים. ⚠️ הטוקן נשמר רק בדפדפן הזה — לא ב-Gist, לא בגיבוי ולא בריפו. אל תשמרו מידע רגיש (ל-Gist "סודי" יש URL נגיש למי שמחזיק בו).</div>
+      <div class="field-grid" style="margin-top:10px">
+        <label>GitHub Token (הרשאת Gists בלבד)<input class="cell" id="gist-token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+        <label>Gist ID (יתמלא אוטומטית)<input class="cell" id="gist-id" type="text" autocomplete="off" placeholder="נוצר אוטומטית בהעלאה הראשונה"></label>
+      </div>
+      <div class="pillrow" style="margin-top:10px">
+        <button class="addbtn" id="gist-push">⬆ העלה לענן</button>
+        <button class="addbtn" id="gist-pull" style="background:var(--card2);color:var(--ink)">⬇ הורד מהענן</button>
+        <a class="addbtn" style="background:var(--card2);color:var(--ink);text-decoration:none" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">🔑 צור טוקן (Gists: Read and write) ↗</a>
+      </div>
+      <div id="gist-status" class="note" style="margin-top:8px">—</div>
+      <div class="note" style="margin-top:6px">שלבים: (1) צרו טוקן <b>fine-grained</b> עם הרשאת <b>Account → Gists → Read and write</b>. (2) הדביקו אותו כאן. (3) ⬆ העלה — ה-Gist נוצר אוטומטית וה-ID נשמר. (4) במכשיר אחר: אותו טוקן + אותו Gist ID → ⬇ הורד.</div>
     </div>
   </section>
 
