@@ -239,23 +239,37 @@ footer { border-top:1px solid var(--line); padding-top:18px; }
 .tabpanel > section:first-child { margin-top:20px; }
 @media print { .tabs { display:none !important; } .tabpanel { display:block !important; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } *{ transition:none !important; } }
-/* גלריית תמונות השראה לפי חדר (נשמר מקומית) */
+/* גלריית השראה חיה (Openverse) + שמורים לפי חדר */
 .saved-filter { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:4px 0 2px; }
 .chip-toggle { font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; color:var(--muted);
   background:var(--card2); border:1px solid var(--line); border-radius:999px; padding:5px 12px; }
 .chip-toggle.on { color:#04263a; background:linear-gradient(135deg,#f5c451,#f59e0b); border-color:transparent; }
-.room-imgs { display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:6px; margin:10px 0 8px; }
-.rimg { position:relative; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--bg); }
-.rimg.liked { border-color:#f5c451; box-shadow:0 0 0 2px rgba(245,196,81,.35); }
-.rimg img { width:100%; height:78px; object-fit:cover; display:block; cursor:zoom-in; }
-.rimg.zoom { grid-column:1 / -1; }
-.rimg.zoom img { height:auto; max-height:360px; object-fit:contain; cursor:zoom-out; background:#000; }
-.rimg-bar { position:absolute; top:3px; inset-inline-start:3px; display:flex; gap:3px; }
-.rimg-btn { font-size:12px; line-height:1; cursor:pointer; border:none; border-radius:6px; padding:3px 5px;
-  background:rgba(4,20,34,.72); color:#e6edf6; }
-.rimg-btn.like:hover { background:rgba(245,196,81,.9); color:#04263a; }
-.rimg-btn.del:hover { background:rgba(220,38,38,.9); }
-@media print { .room-img-input, .saved-filter, .rimg-bar { display:none !important; } }
+.cc-search { display:flex; gap:6px; margin:12px 0 8px; }
+.cc-q { flex:1; min-width:0; background:var(--bg); border:1px solid var(--line); color:var(--ink);
+  border-radius:8px; padding:7px 10px; font-family:inherit; font-size:13px; }
+.cc-go { flex:0 0 auto; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; color:#04263a;
+  background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; border-radius:8px; padding:7px 12px; }
+.cc-results, .room-saved { display:grid; grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); gap:6px; margin:6px 0; }
+.cctile { position:relative; margin:0; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--bg); }
+.cctile.saved { border-color:#f5c451; box-shadow:0 0 0 2px rgba(245,196,81,.35); }
+.cctile img { width:100%; height:84px; object-fit:cover; display:block; cursor:zoom-in; }
+.cctile.zoom { grid-column:1 / -1; }
+.cctile.zoom img { height:auto; max-height:420px; object-fit:contain; cursor:zoom-out; background:#000; }
+.cc-bar { position:absolute; top:3px; inset-inline-start:3px; display:flex; gap:3px; }
+.cc-like, .cc-del { font-size:13px; line-height:1; cursor:pointer; border:none; border-radius:6px; padding:3px 6px;
+  background:rgba(4,20,34,.74); color:#e6edf6; }
+.cc-like:hover { background:rgba(245,196,81,.92); color:#04263a; }
+.cc-del:hover { background:rgba(220,38,38,.92); }
+.cc-cred { position:absolute; inset-inline:0; bottom:0; font-size:9px; line-height:1.2; padding:2px 4px;
+  color:#dbe4ef; text-decoration:none; background:linear-gradient(transparent, rgba(4,12,22,.82));
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0; transition:opacity .15s; }
+.cctile:hover .cc-cred, .cctile.zoom .cc-cred { opacity:1; }
+.cc-msg { grid-column:1 / -1; font-size:12px; color:var(--muted); padding:8px 4px; }
+.cc-msg.dim { opacity:.7; }
+.saved-head { font-size:12px; font-weight:700; color:var(--muted); margin:10px 0 2px; }
+/* מצב "שמורים בלבד" — מסתיר חיפוש/גלריה חיה/העלאה */
+section.saved-only .cc-search, section.saved-only .cc-results, section.saved-only .filebtn { display:none !important; }
+@media print { .cc-search, .room-img-input, .filebtn, .saved-filter, .cc-bar { display:none !important; } }
 """
 
 JS = r"""
@@ -503,62 +517,134 @@ function addShopRow(table, d){
   document.getElementById("add-shop").addEventListener("click",()=>addShopRow(t,{}));
 })();
 
-// ---------- תמונות השראה לפי חדר (נשמר מקומית, offline; נכנס לגיבוי) ----------
-// המשתמש מוסיף תמונות משלו (מ-Pinterest/ספק) → מוקטנות ל-dataURL ונשמרות ב-state.
-// כך אין תלות ברשת, ולא מוטמעות תמונות מוגנות-זכויות בריפו הפומבי.
+// ---------- גלריית השראה חיה (Openverse) + שמירה לפי חדר ----------
+// תמונות Creative-Commons (API מפתח-חינם, CORS). 🔖 שומר מקומית (נכנס לגיבוי).
+// הגלריה דורשת אינטרנט; שאר הדף אופליין. אין הטמעת תמונות מוגנות-זכויות בריפו הפומבי —
+// שומרים רק הפניה (thumbnail/מקור) + קרדיט רישיון.
 (function(){
-  state.room_images = state.room_images || {};
-  let savedOnly = false;
-  const listFor = k => (state.room_images[k] = state.room_images[k] || []);
+  // מיגרציה מהמבנה הישן (room_images ← העלאות) → room_saved
+  if (state.room_images && !state.room_saved){
+    state.room_saved = {};
+    for (const k in state.room_images)
+      state.room_saved[k] = (state.room_images[k]||[]).map(it => ({ t:"up", src:it.src }));
+    delete state.room_images; save();
+  }
+  state.room_saved = state.room_saved || {};
+  const savedFor = k => (state.room_saved[k] = state.room_saved[k] || []);
+  const same = (a,b) => (a.t==="cc"&&b.t==="cc"&&a.full===b.full) || (a.t==="up"&&b.t==="up"&&a.src===b.src);
+  const isSaved = (k,it) => savedFor(k).some(s => same(s,it));
   function persist(){ try { save(); return true; }
-    catch(e){ alert("האחסון המקומי מלא — מחק תמונות או ייצא גיבוי ונקה."); return false; } }
+    catch(e){ alert("האחסון המקומי מלא — הסר תמונות שמורות או ייצא גיבוי."); return false; } }
+  function updateCount(){ const n = Object.values(state.room_saved).reduce((a,arr)=>a+arr.length,0);
+    const el = document.getElementById("saved-img-count"); if (el) el.textContent = n; }
+
+  function credLink(item){
+    const a = document.createElement("a"); a.className = "cc-cred"; a.target = "_blank"; a.rel = "noopener nofollow";
+    a.href = item.srcurl || item.licurl || "#";
+    a.textContent = (item.by ? item.by + " · " : "") + "CC " + (item.lic||"") + " ↗"; return a;
+  }
+  // ----- גלריה חיה -----
+  function tileCC(k, res){
+    const item = { t:"cc", thumb:res.thumbnail, full:res.url||res.thumbnail, title:res.title||"",
+      by:res.creator||"", lic:(res.license||"").toUpperCase(), licurl:res.license_url||"",
+      src:res.source||"", srcurl:res.foreign_landing_url||"" };
+    const fig = document.createElement("figure"); fig.className = "cctile";
+    const im = document.createElement("img"); im.src = item.thumb; im.loading = "lazy"; im.alt = esc(item.title);
+    im.addEventListener("click", () => fig.classList.toggle("zoom"));
+    const bar = document.createElement("div"); bar.className = "cc-bar";
+    const like = document.createElement("button"); like.className = "cc-like";
+    const setLike = () => { const s = isSaved(k,item); like.textContent = s ? "🔖" : "🏷️";
+      like.title = s ? "הסר משמורים" : "שמור להשראה"; fig.classList.toggle("saved", s); };
+    like.addEventListener("click", () => { const arr = savedFor(k), idx = arr.findIndex(s => same(s,item));
+      if (idx>=0) arr.splice(idx,1); else arr.push(item);
+      if (persist()){ setLike(); renderSaved(k); updateCount(); } });
+    setLike(); bar.appendChild(like);
+    fig.appendChild(im); fig.appendChild(bar); fig.appendChild(credLink(item));
+    return fig;
+  }
+  async function search(k, q){
+    const box = document.querySelector('.cc-results[data-room="'+k+'"]'); if (!box) return;
+    box.dataset.loaded = "1"; box.innerHTML = '<div class="cc-msg">טוען תמונות…</div>';
+    try {
+      const url = "https://api.openverse.org/v1/images/?q=" + encodeURIComponent(q) + "&page_size=12&mature=false";
+      const r = await fetch(url, {headers:{Accept:"application/json"}});
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const results = (await r.json()).results || [];
+      box.innerHTML = "";
+      if (!results.length){ box.innerHTML = '<div class="cc-msg">לא נמצאו תמונות — נסו שאילתה אחרת או Pinterest/Google.</div>'; return; }
+      results.forEach(res => { if (res.thumbnail) box.appendChild(tileCC(k,res)); });
+    } catch(e){
+      box.innerHTML = '<div class="cc-msg">הגלריה החיה לא זמינה כרגע (' + esc(e.message) + '). נסו שוב, או Pinterest/Google למעלה. (דורש אינטרנט)</div>';
+    }
+  }
+  // ----- שמורים (CC + העלאות) -----
+  function renderSaved(k){
+    const box = document.querySelector('.room-saved[data-room="'+k+'"]'); if (!box) return;
+    const arr = savedFor(k); box.innerHTML = "";
+    if (!arr.length){ box.innerHTML = '<div class="cc-msg dim">— אין שמורים —</div>'; return; }
+    arr.forEach(item => {
+      const fig = document.createElement("figure"); fig.className = "cctile saved";
+      const im = document.createElement("img"); im.src = item.t==="cc" ? item.thumb : item.src; im.loading = "lazy"; im.alt = "שמור";
+      im.addEventListener("click", () => fig.classList.toggle("zoom"));
+      const bar = document.createElement("div"); bar.className = "cc-bar";
+      const del = document.createElement("button"); del.className = "cc-del"; del.textContent = "✕"; del.title = "הסר";
+      del.addEventListener("click", () => { const i = arr.indexOf(item); if (i>=0) arr.splice(i,1);
+        if (persist()){ renderSaved(k); updateCount(); const lb = document.querySelector('.cc-results[data-room="'+k+'"]');
+          if (lb && lb.dataset.loaded) search(k, document.querySelector('.cc-q[data-room="'+k+'"]').value.trim()); } });
+      bar.appendChild(del); fig.appendChild(im); fig.appendChild(bar);
+      if (item.t==="cc") fig.appendChild(credLink(item));
+      box.appendChild(fig);
+    });
+  }
+  // ----- העלאה עצמית (מוקטנת ל-dataURL) -----
   function downscale(file, cb){
     const url = URL.createObjectURL(file), img = new Image();
-    img.onload = function(){ const max = 900; let w = img.width, h = img.height;
-      if (w > max || h > max){ const r = Math.min(max/w, max/h); w = Math.round(w*r); h = Math.round(h*r); }
-      const c = document.createElement("canvas"); c.width = w; c.height = h;
-      c.getContext("2d").drawImage(img, 0, 0, w, h); URL.revokeObjectURL(url);
-      cb(c.toDataURL("image/jpeg", 0.72)); };
+    img.onload = function(){ const max=900; let w=img.width,h=img.height;
+      if (w>max||h>max){ const rr=Math.min(max/w,max/h); w=Math.round(w*rr); h=Math.round(h*rr); }
+      const c=document.createElement("canvas"); c.width=w; c.height=h; c.getContext("2d").drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url); cb(c.toDataURL("image/jpeg",0.72)); };
     img.onerror = function(){ URL.revokeObjectURL(url); alert("קובץ תמונה לא תקין."); };
     img.src = url;
   }
-  function updateCount(){ const n = Object.values(state.room_images)
-      .reduce((a, arr) => a + arr.filter(x => x.liked).length, 0);
-    const el = document.getElementById("saved-img-count"); if (el) el.textContent = n; }
-  function render(container){
-    const k = container.getAttribute("data-room"), items = listFor(k);
-    container.innerHTML = "";
-    const shown = items.filter(it => !savedOnly || it.liked);
-    if (savedOnly && !shown.length){ container.innerHTML = '<div class="note" style="margin:0">— אין שמורים —</div>'; return; }
-    shown.forEach(it => {
-      const fig = document.createElement("div"); fig.className = "rimg" + (it.liked ? " liked" : "");
-      const im = document.createElement("img"); im.src = it.src; im.loading = "lazy"; im.alt = "השראה";
-      im.addEventListener("click", () => fig.classList.toggle("zoom"));
-      const bar = document.createElement("div"); bar.className = "rimg-bar";
-      const like = document.createElement("button"); like.className = "rimg-btn like";
-      like.textContent = it.liked ? "🔖" : "🏷️"; like.title = it.liked ? "הסר משמורים" : "שמור להשראה";
-      like.addEventListener("click", () => { it.liked = !it.liked; if (persist()){ render(container); updateCount(); } });
-      const del = document.createElement("button"); del.className = "rimg-btn del"; del.textContent = "✕"; del.title = "מחק";
-      del.addEventListener("click", () => { const idx = items.indexOf(it); if (idx >= 0) items.splice(idx, 1);
-        if (persist()){ render(container); updateCount(); } });
-      bar.appendChild(like); bar.appendChild(del);
-      fig.appendChild(im); fig.appendChild(bar); container.appendChild(fig);
+  // ----- חיווט -----
+  document.querySelectorAll(".cc-go").forEach(btn => btn.addEventListener("click", () => {
+    const k = btn.dataset.room, q = document.querySelector('.cc-q[data-room="'+k+'"]').value.trim(); if (q) search(k,q);
+  }));
+  document.querySelectorAll(".cc-q").forEach(inp => inp.addEventListener("keydown", e => {
+    if (e.key==="Enter"){ e.preventDefault(); const q = inp.value.trim(); if (q) search(inp.dataset.room, q); }
+  }));
+  document.querySelectorAll(".room-img-input").forEach(inp => inp.addEventListener("change", () => {
+    const k = inp.dataset.room, files = [...inp.files].filter(f => f.type.startsWith("image/")); let pending = files.length;
+    if (!pending){ inp.value=""; return; }
+    files.forEach(f => downscale(f, src => { savedFor(k).push({ t:"up", src:src });
+      if (--pending<=0 && persist()){ renderSaved(k); updateCount(); } }));
+    inp.value = "";
+  }));
+  const chip = document.getElementById("saved-only-toggle"), section = chip ? chip.closest("section") : null;
+  let savedOnly = false;
+  if (chip) chip.addEventListener("click", () => { savedOnly = !savedOnly; chip.classList.toggle("on", savedOnly);
+    chip.setAttribute("aria-pressed", savedOnly); if (section) section.classList.toggle("saved-only", savedOnly); });
+  // render saved on load
+  document.querySelectorAll(".room-saved").forEach(b => renderSaved(b.dataset.room));
+  updateCount();
+  // טעינת הגלריה החיה כשכרטיס נכנס לתצוגה — מבוסס scroll/getBoundingClientRect
+  // (ולא IntersectionObserver, שאינו אמין בטאב שאינו בפוקוס). חוסך קריאות API מיותרות.
+  function maybeLoadVisible(){
+    document.querySelectorAll('.cc-results').forEach(b => {
+      if (b.dataset.loaded) return;
+      const card = b.closest('.card'); if (!card) return;
+      const r = card.getBoundingClientRect();
+      // height>0 מוודא שהטאב פעיל (בטאב מוסתר getBoundingClientRect מחזיר 0)
+      if (r.height > 0 && r.top < window.innerHeight + 300 && r.bottom > -300)
+        search(b.dataset.room, b.dataset.search);
     });
   }
-  const renderAll = () => document.querySelectorAll(".room-imgs").forEach(render);
-  document.querySelectorAll(".room-img-input").forEach(inp => {
-    inp.addEventListener("change", () => {
-      const k = inp.getAttribute("data-room"), files = [...inp.files].filter(f => f.type.startsWith("image/"));
-      let pending = files.length; if (!pending){ inp.value = ""; return; }
-      files.forEach(f => downscale(f, src => { listFor(k).push({ src: src, liked: false });
-        if (--pending <= 0 && persist()){ render(document.querySelector('.room-imgs[data-room="' + k + '"]')); updateCount(); } }));
-      inp.value = "";
-    });
-  });
-  const chip = document.getElementById("saved-only-toggle");
-  if (chip) chip.addEventListener("click", () => { savedOnly = !savedOnly;
-    chip.classList.toggle("on", savedOnly); chip.setAttribute("aria-pressed", savedOnly); renderAll(); });
-  renderAll(); updateCount();
+  window.addEventListener('scroll', maybeLoadVisible, {passive:true});
+  window.addEventListener('resize', maybeLoadVisible);
+  // כשמחליפים טאב (הכרטיסים מקבלים גובה) — בדיקה חוזרת
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setTimeout(maybeLoadVisible, 80)));
+  maybeLoadVisible();
+  setTimeout(maybeLoadVisible, 400); // תופס מצב שבו טאב השיפוץ פעיל כבר בטעינה (דרך #hash)
 })();
 
 // ---------- מעקב שווי ----------
@@ -1184,6 +1270,7 @@ def main():
             )
             note = (f'<div class="note" style="margin-bottom:8px">{r.get("note","")}</div>'
                     if r.get("note") else "")
+            q = (r.get("search_en", "") or "").replace('"', '&quot;')
             cards.append(
                 '<div class="card">'
                 f'<h3>{r.get("emoji","")} {r.get("name","")}</h3>'
@@ -1191,9 +1278,16 @@ def main():
                 f'{note}'
                 f'<ul class="flat" style="margin:0 0 10px">{ideas}</ul>'
                 f'<div class="pillrow">{links}</div>'
-                f'<div class="room-imgs" data-room="{i}"></div>'
+                # שורת חיפוש לגלריה החיה (Openverse)
+                '<div class="cc-search">'
+                f'<input class="cc-q" data-room="{i}" value="{q}" placeholder="חיפוש תמונות השראה…">'
+                f'<button class="cc-go" data-room="{i}">🔎 חפש</button>'
+                '</div>'
+                f'<div class="cc-results" data-room="{i}" data-search="{q}"></div>'
+                '<div class="saved-head">🔖 שמורים בחדר זה:</div>'
+                f'<div class="room-saved" data-room="{i}"></div>'
                 '<label class="addbtn filebtn" style="background:var(--card2);color:var(--ink);'
-                'display:inline-block;margin-top:4px">➕ הוסף תמונת השראה'
+                'display:inline-block;margin-top:6px">➕ העלה תמונה משלך'
                 f'<input type="file" accept="image/*" multiple class="room-img-input" data-room="{i}"></label>'
                 '</div>'
             )
@@ -1203,7 +1297,7 @@ def main():
     <div class="sub">{ridea.get('intro','')}</div>
     <div class="saved-filter">
       <button class="chip-toggle" id="saved-only-toggle" aria-pressed="false">🔖 הצג שמורים בלבד (<span id="saved-img-count">0</span>)</button>
-      <span class="note" style="margin:0">מוסיפים תמונות מהמחשב (מ-Pinterest/ספק) → נשמרות מקומית בדפדפן ונכנסות לגיבוי. 🔖 = שמור להשראה. לחיצה על תמונה מגדילה.</span>
+      <span class="note" style="margin:0">גלריה חיה מ-Openverse (תמונות Creative-Commons, עם קרדיט וקישור למקור) — דורשת אינטרנט. 🔖 = שמור להשראה (נשמר מקומית + בגיבוי). אפשר גם להעלות תמונה משלך.</span>
     </div>
     <div class="grid" style="margin-top:10px">{''.join(cards)}</div>
   </section>"""
