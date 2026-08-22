@@ -12,8 +12,8 @@ __pycache__/
 !.env.example
 .venv/
 venv/
-
 # IDEs
+
 .vscode/
 .idea/
 
@@ -49,9 +49,8 @@ build/
 *.stackdump
 .history/
 
-# Private apartment source document (+ rendered image of it)
+# Private apartment source PDF (the rendered plan image IS published, see assets/plan-128A5.png)
 dira-nuriot/128A5.pdf
-dira-nuriot/assets/plan-128A5.png
 
 # Generated downloads, raw third-party pages, and historical snapshots
 dira-nuriot/updates/raw-*
@@ -59,3 +58,4 @@ dira-nuriot/updates/deals-*.json
 dira-nuriot/updates/snapshots/
 dira-nuriot/updates/update-history.json
 dira-nuriot/updates/update-status.json
+secret.env
