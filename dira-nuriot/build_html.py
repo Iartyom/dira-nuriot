@@ -303,6 +303,25 @@ const LS = "dira-nuriot-state-v3";
 const LEGACY_LS = "dira-nuriot-state-v2";
 const state = JSON.parse(localStorage.getItem(LS) || localStorage.getItem(LEGACY_LS) || "{}");
 function save(){ localStorage.setItem(LS, JSON.stringify(state)); }
+// ----- לוח משותף: מבקרים (ללא טוקן) טוענים אוטומטית את ה-Gist המשותף -----
+// בעל הטוקן (העורך) לא נדרס — רק מבקרים ללא טוקן מסתנכרנים לגרסה שפורסמה.
+(function(){
+  const SHARED = (DATA.shared_gist_id||"").trim(); if(!SHARED) return;
+  let creds={}; try{ creds=JSON.parse(localStorage.getItem("dira-nuriot-gist")||"{}"); }catch(e){}
+  if(creds.token) return; // עורך — לא לדרוס עריכה מקומית שלא פורסמה
+  fetch("https://api.github.com/gists/"+SHARED, {headers:{Accept:"application/vnd.github+json"}})
+    .then(r=> r.ok ? r.json() : null)
+    .then(j=>{ if(!j||!j.files) return null; const f=j.files["dira-nuriot-state.json"]; if(!f) return null;
+      return (f.truncated && f.raw_url) ? fetch(f.raw_url).then(r=>r.text()) : f.content; })
+    .then(content=>{ if(!content) return;
+      let parsed; try{ parsed=JSON.parse(content); }catch(e){ return; }
+      const incoming=parsed.state||parsed, at=parsed.updated_at||"";
+      if(!at || at===localStorage.getItem("dira-nuriot-shared-at")) return; // ריק/כבר הוחל — מונע לולאה
+      localStorage.setItem(LS, JSON.stringify(incoming));
+      localStorage.setItem("dira-nuriot-shared-at", at);
+      location.reload();
+    }).catch(()=>{});
+})();
 function nis(n){ return Math.round(n).toLocaleString("he-IL") + " ₪"; }
 function esc(s){ return (s==null?"":(""+s)).replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
 function sizeTag(a){ if(!a) return ""; if(a<6) return '<span class="szt szt-s">קטן</span>'; if(a<=12) return '<span class="szt szt-m">בינוני</span>'; return '<span class="szt szt-l">גדול</span>'; }
@@ -1251,6 +1270,7 @@ def main():
                        for stage in status.get("stages", [])
                    ],
                },
+               "shared_gist_id": p.get("shared_gist_id", ""),
                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat()}
 
     # ----- סקשנים שעוברים לסוף / נוספים -----
@@ -1522,6 +1542,7 @@ def main():
       </div>
       <div id="gist-status" class="note" style="margin-top:8px">—</div>
       <div class="note" style="margin-top:6px">שלבים: (1) צרו טוקן <b>fine-grained</b> עם הרשאת <b>Account → Gists → Read and write</b>. (2) הדביקו אותו כאן. (3) ⬆ העלה — ה-Gist נוצר אוטומטית וה-ID נשמר. (4) במכשיר אחר: אותו טוקן + אותו Gist ID → ⬇ הורד.</div>
+      <div class="note" style="margin-top:6px">🌐 <b>לוח משותף לכולם:</b> אחרי ⬆ העלה, העתיקו את ה-Gist ID והכניסו אותו ב-<code>apartment.json → project.shared_gist_id</code> (ובנו מחדש). אז <b>כל מי שיש לו את קישור האתר</b> יראה אוטומטית את הלוח שפרסמתם (לצפייה; רק לכם יש טוקן לעדכן). {'מצב נוכחי: מפורסם ✓' if p.get('shared_gist_id') else 'מצב נוכחי: לא מפורסם.'}</div>
     </div>
   </section>
 
