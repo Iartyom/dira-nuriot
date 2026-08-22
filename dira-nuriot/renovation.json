@@ -17,8 +17,8 @@
   },
   "shortest_path": "המפתח לקיצור הזמן: להזמין מראש (עוד לפני קבלת המפתח) את כל מה שיש לו זמן ייצור/משלוח ארוך — מטבח, מיזוג, ומוצרי עלי אקספרס. ביום המפתח: בדק בית. מיד אחרי: רצף עבודה צמוד ללא חורים (הריסה→תשתיות→איטום→בנייה→ריצוף→צבע→מטבח→שיש→סניטריה→ניקיון), עם חפיפת עבודות DIY (תאורה/אביזרים/צבע) בזמני המתנה לייצור השיש. יעד: ~25 ימי עבודה (5 שבועות).",
   "room_ideas": {
-    "_comment": "רעיונות עיצוב/שיפוץ לפי חדר, מותאמים למידות האמיתיות של 128A5. search_en = שאילתת ברירת מחדל לגלריית התמונות החיה (Openverse — תמונות Creative-Commons, מפתח-חינם); links = פתיחת חיפוש חיצוני (Pinterest/Google). הגלריה החיה דורשת אינטרנט; שאר הדף אופליין.",
-    "intro": "לכל חדר: רעיונות ממוקדים למידות שלנו + גלריית תמונות השראה חיה (Openverse — תמונות ברישיון Creative-Commons, עם קרדיט וקישור למקור). חפשו, סמנו 🔖 לשמירה, והשמורים נכנסים לגיבוי. 📌 Pinterest / 🔍 Google לחיפוש רחב יותר. הגלריה החיה דורשת חיבור לאינטרנט.",
+    "_comment": "רעיונות עיצוב/שיפוץ לפי חדר, מותאמים למידות האמיתיות של 128A5. search_en = שאילתת ברירת מחדל לגלריית התמונות החיה (Pexels אם הוזן מפתח, אחרת Openverse); links = פתיחת חיפוש Pinterest חיצוני. הגלריה החיה דורשת אינטרנט; שאר הדף אופליין.",
+    "intro": "לכל חדר: רעיונות ממוקדים למידות שלנו + גלריית תמונות השראה חיה (Pexels אם הוזן מפתח — איכותי; אחרת Openverse). חפשו, סמנו 🔖 לשמירה, והשמורים נכנסים לגיבוי. 📌 Pinterest לחיפוש רחב יותר. הגלריה החיה דורשת חיבור לאינטרנט.",
     "rooms": [
       {
         "emoji": "🍳",
@@ -34,8 +34,7 @@
           "כיור נשלף וברז איכותי (כבר כלול — שדרוג)"
         ],
         "links": [
-          { "label": "📌 Pinterest — מטבח פתוח קטן", "url": "https://www.pinterest.com/search/pins/?q=small+open+kitchen+living+room+layout" },
-          { "label": "🔍 חיפוש תמונות — מטבח פתוח לסלון", "url": "https://www.google.com/search?tbm=isch&q=מטבח+פתוח+לסלון+דירה+חדשה" }
+          { "label": "📌 Pinterest — מטבח פתוח קטן", "url": "https://www.pinterest.com/search/pins/?q=small+open+kitchen+living+room+layout" }
         ]
       },
       {
@@ -51,8 +50,7 @@
           "שטיח שמגדיר את אזור הישיבה"
         ],
         "links": [
-          { "label": "📌 Pinterest — סלון פתוח מודרני", "url": "https://www.pinterest.com/search/pins/?q=open+plan+living+dining+room+modern" },
-          { "label": "🔍 חיפוש תמונות — סלון פינת אוכל", "url": "https://www.google.com/search?tbm=isch&q=סלון+פינת+אוכל+מודרני" }
+          { "label": "📌 Pinterest — סלון פתוח מודרני", "url": "https://www.pinterest.com/search/pins/?q=open+plan+living+dining+room+modern" }
         ]
       },
       {
@@ -68,8 +66,7 @@
           "ברז שחור מט / ראש גשם"
         ],
         "links": [
-          { "label": "📌 Pinterest — אמבטיה משפחתית ~2×2מ'", "url": "https://www.pinterest.com/search/pins/?q=small+family+bathroom+2x2m+design" },
-          { "label": "🔍 חיפוש תמונות — חדר רחצה עם אמבטיה", "url": "https://www.google.com/search?tbm=isch&q=חדר+רחצה+משפחתי+עם+אמבטיה" }
+          { "label": "📌 Pinterest — אמבטיה משפחתית ~2×2מ'", "url": "https://www.pinterest.com/search/pins/?q=small+family+bathroom+2x2m+design" }
         ]
       },
       {
@@ -85,8 +82,7 @@
           "אחסון בנישות שקועות"
         ],
         "links": [
-          { "label": "📌 Pinterest — אמבטיה קטנה ~1.5×1.8מ'", "url": "https://www.pinterest.com/search/pins/?q=small+ensuite+bathroom+shower+1.5x1.8m" },
-          { "label": "🔍 חיפוש תמונות — אמבטיה קטנה מקלחת", "url": "https://www.google.com/search?tbm=isch&q=אמבטיה+קטנה+מקלחת+הורים" }
+          { "label": "📌 Pinterest — אמבטיה קטנה ~1.5×1.8מ'", "url": "https://www.pinterest.com/search/pins/?q=small+ensuite+bathroom+shower+1.5x1.8m" }
         ]
       },
       {
@@ -102,8 +98,7 @@
           "תאורה עקיפה חמימה"
         ],
         "links": [
-          { "label": "📌 Pinterest — שירותי אורחים", "url": "https://www.pinterest.com/search/pins/?q=small+powder+room+half+bath+design" },
-          { "label": "🔍 חיפוש תמונות — שירותי אורחים מעוצבים", "url": "https://www.google.com/search?tbm=isch&q=שירותי+אורחים+מעוצבים" }
+          { "label": "📌 Pinterest — שירותי אורחים", "url": "https://www.pinterest.com/search/pins/?q=small+powder+room+half+bath+design" }
         ]
       },
       {
@@ -118,8 +113,7 @@
           "תאורת קריאה דו-צדדית + עמעום"
         ],
         "links": [
-          { "label": "📌 Pinterest — חדר הורים + מלתחה", "url": "https://www.pinterest.com/search/pins/?q=master+bedroom+walk+in+closet+small" },
-          { "label": "🔍 חיפוש תמונות — חדר ארונות מלתחה", "url": "https://www.google.com/search?tbm=isch&q=חדר+ארונות+מלתחה" }
+          { "label": "📌 Pinterest — חדר הורים + מלתחה", "url": "https://www.pinterest.com/search/pins/?q=master+bedroom+walk+in+closet+small" }
         ]
       },
       {
@@ -134,8 +128,7 @@
           "קיר צבע/משחקי"
         ],
         "links": [
-          { "label": "📌 Pinterest — חדר ילדים קטן חכם", "url": "https://www.pinterest.com/search/pins/?q=small+kids+room+space+saving+ideas" },
-          { "label": "🔍 חיפוש תמונות — חדר ילדים קטן", "url": "https://www.google.com/search?tbm=isch&q=חדר+ילדים+קטן+עיצוב" }
+          { "label": "📌 Pinterest — חדר ילדים קטן חכם", "url": "https://www.pinterest.com/search/pins/?q=small+kids+room+space+saving+ideas" }
         ]
       },
       {
@@ -150,8 +143,7 @@
           "פתרון אחסון נייד"
         ],
         "links": [
-          { "label": "📌 Pinterest — ממ\"ד כחדר שינה", "url": "https://www.pinterest.com/search/pins/?q=safe+room+bedroom+design+ideas" },
-          { "label": "🔍 חיפוש תמונות — עיצוב ממד", "url": "https://www.google.com/search?tbm=isch&q=עיצוב+ממד+חדר+שינה" }
+          { "label": "📌 Pinterest — ממ\"ד כחדר שינה", "url": "https://www.pinterest.com/search/pins/?q=safe+room+bedroom+design+ideas" }
         ]
       },
       {
@@ -167,8 +159,7 @@
           "סורגים שקופים לבטיחות (אם רלוונטי)"
         ],
         "links": [
-          { "label": "📌 Pinterest — מרפסת דק ~13מ'", "url": "https://www.pinterest.com/search/pins/?q=small+balcony+deck+lounge+design" },
-          { "label": "🔍 חיפוש תמונות — מרפסת שמש דק", "url": "https://www.google.com/search?tbm=isch&q=מרפסת+שמש+דק+פרגולה" }
+          { "label": "📌 Pinterest — מרפסת דק ~13מ'", "url": "https://www.pinterest.com/search/pins/?q=small+balcony+deck+lounge+design" }
         ]
       }
     ]
