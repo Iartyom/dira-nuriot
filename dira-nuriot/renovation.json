@@ -24,7 +24,7 @@
         "emoji": "🍳",
         "name": "מטבח",
         "dims": "2.95×3.05 מ' · ~9 מ\"ר · חדר סגור היום",
-        "search_en": "open kitchen living room",
+        "search_en": "modern open kitchen island",
         "note": "🏆 ההשבחה הגדולה — פתיחה לסלון. גודל בינוני, לכן תכנון פריסה חכם קריטי.",
         "ideas": [
           "פתיחה לסלון + אי או בר הפרדה",
@@ -41,7 +41,7 @@
         "emoji": "🛋️",
         "name": "סלון + פינת אוכל",
         "dims": "5.15×4.45 מ' · ~23 מ\"ר",
-        "search_en": "open plan living dining room",
+        "search_en": "modern open plan living room",
         "note": "מתחבר למטבח בפתיחה — חלל מגורים גדול ופתוח.",
         "ideas": [
           "אזור אוכל צמוד למטבח, ספה מול קיר טלוויזיה",
@@ -57,7 +57,7 @@
         "emoji": "🛁",
         "name": "חדר רחצה ראשי (אמבט)",
         "dims": "188/203 · 1.88×2.03 מ' · ~3.8 מ\"ר",
-        "search_en": "small bathroom bathtub",
+        "search_en": "modern bathroom bathtub",
         "note": "החדר הרטוב הגדול — משפחתי, עם אמבט.",
         "ideas": [
           "אמבט או מקלחת גדולה עם מחיצת זכוכית",
@@ -73,7 +73,7 @@
         "emoji": "🚿",
         "name": "חדר רחצה הורים (צמוד)",
         "dims": "148/178 · 1.48×1.78 מ' · ~2.6 מ\"ר",
-        "search_en": "small ensuite shower",
+        "search_en": "modern bathroom shower",
         "note": "קטן וצמוד לחדר ההורים — הכל בשירות תחושת מרחב.",
         "ideas": [
           "מקלחת בלבד (בלי אמבט) לניצול השטח",
@@ -89,7 +89,7 @@
         "emoji": "🚽",
         "name": "שירותי אורחים (WC)",
         "dims": "113/173 · 1.13×1.73 מ' · אסלה בלבד",
-        "search_en": "toilet powder room",
+        "search_en": "modern powder room",
         "note": "WC אורחים נפרד = יתרון מכירה. אפשר 'וואו' קטן בעלות נמוכה.",
         "ideas": [
           "קיר אקצנט / טפט רחיץ",
@@ -105,7 +105,7 @@
         "emoji": "🛏️",
         "name": "חדר הורים + חדר ארונות",
         "dims": "3.55×3.05 מ' + ארונות 1.70×1.80 מ'",
-        "search_en": "bedroom walk in closet",
+        "search_en": "master bedroom walk in closet",
         "note": "חדר הורים עם חדר ארונות צמוד (170/180) — יתרון נדיר.",
         "ideas": [
           "מלתחה מאורגנת (מדפים+מוטות עד התקרה)",
@@ -120,7 +120,7 @@
         "emoji": "🧒",
         "name": "חדר ילדים / שינה",
         "dims": "~2.85–3.15 מ' לצלע · 3 חדרי שינה",
-        "search_en": "kids bedroom",
+        "search_en": "modern kids bedroom",
         "note": "חדרים ~9–11 מ\"ר — פונקציונליים וגמישים.",
         "ideas": [
           "מיטת קומותיים/גלריה לניצול גובה (2.5 מ')",
@@ -135,7 +135,7 @@
         "emoji": "🛡️",
         "name": "ממ\"ד (חדר שינה)",
         "dims": "3.35×2.95 מ' · ~10 מ\"ר",
-        "search_en": "small bedroom",
+        "search_en": "modern minimalist bedroom",
         "note": "⚠️ אסור לגעת/לקדוח בקירות/דלת הבטון — רק ריהוט וצבע.",
         "ideas": [
           "ארונות עצמאיים (בלי קידוח בקיר בטון)",
@@ -150,7 +150,7 @@
         "emoji": "☀️",
         "name": "מרפסת שמש",
         "dims": "5.70×2.25 מ' · ~13 מ\"ר",
-        "search_en": "balcony deck lounge",
+        "search_en": "modern balcony lounge",
         "note": "מרפסת גדולה — פוטנציאל חלל חוץ משמעותי.",
         "ideas": [
           "דק סינטטי (נעיצת clip, DIY)",
