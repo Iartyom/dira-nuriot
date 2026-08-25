@@ -808,38 +808,50 @@ function addShopRow(table, d){
   const base = cfg.url.replace(/\/+$/,"") + "/rest/v1/" + (cfg.table||"board");
   const ROW = cfg.row || "main", MK = "dira-nuriot-cloud-at";
   const H = { apikey: cfg.key, "Authorization":"Bearer "+cfg.key, "Content-Type":"application/json" };
-  let lastEdit = 0, pushT = null;
+  let pushTimer = null, pushInFlight = false, lastLocalChange = 0;
   const stripped = () => { const s = Object.assign({}, state); delete s.pexels_key; return s; };
   function setCloud(msg, ok){ const el = document.getElementById("cloud-status"); if(!el) return;
     el.textContent = "☁️ " + msg;
     el.style.color = ok===false ? "var(--rose,#fb7185)" : (ok ? "var(--green,#22c55e)" : "var(--muted)"); }
   async function push(){
-    const at = new Date().toISOString();
+    pushInFlight = true;
     try{
-      const r = await fetch(base, { method:"POST", headers: Object.assign({Prefer:"resolution=merge-duplicates"}, H),
+      const at = new Date().toISOString();
+      const r = await fetch(base, { method:"POST",
+        headers: Object.assign({Prefer:"resolution=merge-duplicates,return=representation"}, H),
         body: JSON.stringify([{ id: ROW, data: stripped(), updated_at: at }]) });
-      if(r.ok){ localStorage.setItem(MK, at); setCloud("נשמר בענן ✓ " + new Date().toLocaleTimeString("he-IL"), true); }
-      else setCloud("שגיאת שמירה (" + r.status + ")", false);
+      if(r.ok){
+        // קריטי: לשמור את חותמת-הזמן כפי שהשרת מחזיר (פורמט +00:00 שונה מ-toISOString "Z")
+        // אחרת כל pull חושב שהענן "חדש יותר" → רענון מיותר בכל שמירה.
+        let serverAt = at;
+        try{ const rows = await r.json(); if(rows && rows[0] && rows[0].updated_at) serverAt = rows[0].updated_at; }catch(e){}
+        localStorage.setItem(MK, serverAt);
+        setCloud("נשמר בענן ✓ " + new Date().toLocaleTimeString("he-IL"), true);
+      } else setCloud("שגיאת שמירה (" + r.status + ")", false);
     }catch(e){ setCloud("אין חיבור לענן", false); }
+    finally { pushInFlight = false; }
   }
-  window.__cloudPush = () => { lastEdit = Date.now(); clearTimeout(pushT); pushT = setTimeout(push, 1500); };
+  window.__cloudPush = () => { lastLocalChange = Date.now(); clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => { pushTimer = null; push(); }, 1500); };
   async function pull(){
+    // לא מושכים/מרעננים כל עוד יש שינוי מקומי שטרם נשמר — מונע איבוד שמירה וקפיצה לראש
+    if(pushTimer || pushInFlight || Date.now() - lastLocalChange < 4000) return;
     try{
       const r = await fetch(base + "?id=eq." + encodeURIComponent(ROW) + "&select=data,updated_at", {headers:H});
       if(!r.ok) return;
       const rows = await r.json();
       if(!rows.length){ push(); return; }               // אין שורה → זרע ממצב מקומי
       const at = rows[0].updated_at, data = rows[0].data;
-      if(!at || at === localStorage.getItem(MK)) return; // כבר מסונכרן / שלנו
+      if(!at || at === localStorage.getItem(MK)) return; // אין שינוי אמיתי (זהה למה ששמרנו)
       if(state.pexels_key) data.pexels_key = state.pexels_key;
       localStorage.setItem(LS, JSON.stringify(data)); localStorage.setItem(MK, at);
-      location.reload();                                 // רינדור מחדש עם המצב מהענן
+      location.reload();                                 // שינוי אמיתי ממכשיר אחר — רינדור מחדש
     }catch(e){}
   }
   setCloud("מסונכרן", true);
   pull();
-  // poll עדין — רק כשאין עריכה פעילה (לא לקטוע הקלדה/סימון)
-  setInterval(() => { if(Date.now() - lastEdit > 8000) pull(); }, 25000);
+  // poll עדין — רק כשלא נגעת כלום 8ש' (לא לקטוע גלישה/סימון)
+  setInterval(() => { if(Date.now() - lastLocalChange > 8000) pull(); }, 25000);
 })();
 
 // ---------- מעקב שווי ----------
