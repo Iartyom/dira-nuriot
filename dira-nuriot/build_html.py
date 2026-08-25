@@ -97,7 +97,8 @@ ul.flat .pri { font-size:12px; color:var(--muted); white-space:nowrap; }
 .prodprice { font-size:12px; color:var(--gold); }
 .addbtn { margin-top:10px; background:var(--accent); color:#04293b; border:0; border-radius:8px; padding:8px 16px; font-weight:700; cursor:pointer; font-size:14px; }
 .addbtn:hover { opacity:.9; }
-table input.cell { width:100%; background:var(--bg); border:1px solid var(--line); color:var(--ink); border-radius:6px; padding:6px 8px; font-size:13px; }
+.cell { background:var(--bg); border:1px solid var(--line); color:var(--ink); border-radius:6px; padding:6px 8px; font-size:13px; font-family:inherit; }
+table input.cell { width:100%; }
 .delbtn { background:none; border:0; color:var(--red); cursor:pointer; font-size:16px; }
 .vtrend { font-size:15px; margin-bottom:10px; font-weight:700; }
 .vchart { display:flex; align-items:flex-end; gap:16px; height:200px; padding:30px 0 0; }
@@ -249,25 +250,18 @@ footer { border-top:1px solid var(--line); padding-top:18px; }
 .src-picker input { flex:1; min-width:220px; background:#0a1728; border:1px solid #243b5b; color:var(--ink);
   border-radius:8px; padding:6px 10px; font-family:inherit; font-size:12.5px; }
 .src-picker a { color:var(--accent); text-decoration:none; font-weight:700; }
-/* שדה חיפוש — pill מאוחד עם זוהר פוקוס */
-.cc-search { display:flex; margin:12px 0 8px; border:1px solid var(--line); border-radius:11px; background:var(--bg);
-  overflow:hidden; transition:border-color .15s, box-shadow .15s; }
-.cc-search:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px rgba(56,189,248,.18); }
-.cc-q { flex:1; min-width:0; background:transparent; border:none; color:var(--ink);
-  padding:9px 13px; font-family:inherit; font-size:13px; }
-.cc-q:focus { outline:none; }
-.cc-q::placeholder { color:#5f7392; }
-.cc-go { flex:0 0 auto; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; color:#04263a;
-  background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; padding:9px 16px; transition:filter .15s; }
-.cc-go:hover { filter:brightness(1.08); }
-/* שדות קלט חלקים בכל האפליקציה */
-.cell, .src-picker input { transition:border-color .15s, box-shadow .15s; }
-.cell:focus, .src-picker input:focus, .field-grid input:focus {
-  outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(56,189,248,.18); }
+/* שדה חיפוש — עקבי עם שאר האפליקציה (.cell + .addbtn) */
+.cc-search { display:flex; gap:8px; margin:12px 0 8px; }
+.cc-q { flex:1; min-width:0; }
+.cc-go { flex:0 0 auto; margin-top:0; }
+/* פוקוס עדין ועקבי לכל שדות הקלט */
+.cell { transition:border-color .15s; }
+.cell:focus, .src-picker input:focus, .field-grid input:focus { outline:none; border-color:var(--accent); }
 input::placeholder, textarea::placeholder { color:#5f7392; }
 /* רשימות נערכות — שורת הוספה וכפתור מחיקה */
 .add-row { display:flex; gap:8px; margin-top:12px; }
 .add-row .cell { flex:1; }
+.add-row .addbtn { margin-top:0; }
 ul[data-elist] li { display:flex; align-items:center; gap:6px; }
 ul[data-elist] li > label { flex:1; }
 .elist-x { border:none; background:transparent; color:var(--muted); cursor:pointer; font-size:13px; line-height:1;
@@ -334,25 +328,6 @@ const LS = "dira-nuriot-state-v3";
 const LEGACY_LS = "dira-nuriot-state-v2";
 const state = JSON.parse(localStorage.getItem(LS) || localStorage.getItem(LEGACY_LS) || "{}");
 function save(){ localStorage.setItem(LS, JSON.stringify(state)); try{ if(window.__cloudPush) window.__cloudPush(); }catch(e){} }
-// ----- לוח משותף: מבקרים (ללא טוקן) טוענים אוטומטית את ה-Gist המשותף -----
-// בעל הטוקן (העורך) לא נדרס — רק מבקרים ללא טוקן מסתנכרנים לגרסה שפורסמה.
-(function(){
-  const SHARED = (DATA.shared_gist_id||"").trim(); if(!SHARED) return;
-  let creds={}; try{ creds=JSON.parse(localStorage.getItem("dira-nuriot-gist")||"{}"); }catch(e){}
-  if(creds.token) return; // עורך — לא לדרוס עריכה מקומית שלא פורסמה
-  fetch("https://api.github.com/gists/"+SHARED, {headers:{Accept:"application/vnd.github+json"}})
-    .then(r=> r.ok ? r.json() : null)
-    .then(j=>{ if(!j||!j.files) return null; const f=j.files["dira-nuriot-state.json"]; if(!f) return null;
-      return (f.truncated && f.raw_url) ? fetch(f.raw_url).then(r=>r.text()) : f.content; })
-    .then(content=>{ if(!content) return;
-      let parsed; try{ parsed=JSON.parse(content); }catch(e){ return; }
-      const incoming=parsed.state||parsed, at=parsed.updated_at||"";
-      if(!at || at===localStorage.getItem("dira-nuriot-shared-at")) return; // ריק/כבר הוחל — מונע לולאה
-      localStorage.setItem(LS, JSON.stringify(incoming));
-      localStorage.setItem("dira-nuriot-shared-at", at);
-      location.reload();
-    }).catch(()=>{});
-})();
 function nis(n){ return Math.round(n).toLocaleString("he-IL") + " ₪"; }
 function esc(s){ return (s==null?"":(""+s)).replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
 function sizeTag(a){ if(!a) return ""; if(a<6) return '<span class="szt szt-s">קטן</span>'; if(a<=12) return '<span class="szt szt-m">בינוני</span>'; return '<span class="szt szt-l">גדול</span>'; }
@@ -848,58 +823,6 @@ function addShopRow(table, d){
     box.addEventListener("scroll", () => maybeMore(box), {passive:true}));
 })();
 
-// ---------- סנכרון ענן (GitHub Gist) ----------
-// שומר/טוען את כל ה-state ל/מ-Gist פרטי. הטוקן וה-Gist ID נשמרים במפתח localStorage
-// נפרד (dira-nuriot-gist) — לא בתוך state — כדי שלא ידלפו לגיבוי או ל-Gist עצמו.
-(function(){
-  const GK = "dira-nuriot-gist", FILE = "dira-nuriot-state.json", API = "https://api.github.com/gists";
-  const tokEl = document.getElementById("gist-token"), idEl = document.getElementById("gist-id"),
-        stEl = document.getElementById("gist-status");
-  if (!tokEl) return;
-  let creds = {}; try { creds = JSON.parse(localStorage.getItem(GK) || "{}"); } catch(e){}
-  if (creds.token) tokEl.value = creds.token;
-  if (creds.id) idEl.value = creds.id;
-  const saveCreds = () => { creds.token = tokEl.value.trim(); creds.id = idEl.value.trim();
-    localStorage.setItem(GK, JSON.stringify(creds)); };
-  const setStatus = (msg, ok) => { stEl.textContent = msg;
-    stEl.style.color = ok === false ? "var(--rose,#fb7185)" : (ok ? "var(--green,#22c55e)" : "var(--muted)"); };
-  function payload(){ const s = Object.assign({}, state); delete s.pexels_key; // לא מסנכרנים מפתחות/סודות
-    return JSON.stringify({ app:"dira-nuriot", updated_at:new Date().toISOString(), state:s }, null, 2); }
-  async function gh(url, opts){ opts = opts || {};
-    opts.headers = Object.assign({ "Authorization":"Bearer "+creds.token, "Accept":"application/vnd.github+json" }, opts.headers||{});
-    const r = await fetch(url, opts);
-    if (!r.ok) throw new Error("GitHub " + r.status + (r.status===401 ? " (טוקן לא תקין/חסר הרשאה)" : r.status===404 ? " (Gist לא נמצא)" : ""));
-    return r.json();
-  }
-  document.getElementById("gist-push").addEventListener("click", async () => {
-    saveCreds(); if (!creds.token){ setStatus("צריך טוקן.", false); return; }
-    setStatus("מעלה…");
-    try {
-      const body = { description:"dira-nuriot dashboard state", files:{ [FILE]:{ content: payload() } } };
-      let j;
-      if (creds.id){ j = await gh(API + "/" + creds.id, { method:"PATCH", body: JSON.stringify(body) }); }
-      else { body.public = false; j = await gh(API, { method:"POST", body: JSON.stringify(body) });
-        creds.id = j.id; idEl.value = j.id; saveCreds(); }
-      setStatus("הועלה לענן ✓ · " + new Date().toLocaleString("he-IL"), true);
-    } catch(e){ setStatus("שגיאה בהעלאה: " + e.message, false); }
-  });
-  document.getElementById("gist-pull").addEventListener("click", async () => {
-    saveCreds(); if (!creds.token || !creds.id){ setStatus("צריך טוקן ו-Gist ID.", false); return; }
-    if (!confirm("הורדה תחליף את הנתונים המקומיים בגרסה מהענן. להמשיך?")) return;
-    setStatus("מוריד…");
-    try {
-      const j = await gh(API + "/" + creds.id);
-      const f = j.files && j.files[FILE]; if (!f) throw new Error("אין קובץ מצב ב-Gist");
-      let content = f.content; if (f.truncated && f.raw_url) content = await (await fetch(f.raw_url)).text();
-      const parsed = JSON.parse(content), incoming = parsed.state || parsed;
-      if (state.pexels_key) incoming.pexels_key = state.pexels_key; // שומרים מפתח מקומי
-      localStorage.setItem(LS, JSON.stringify(incoming));
-      setStatus("הורד ✓ טוען מחדש…", true); setTimeout(() => location.reload(), 700);
-    } catch(e){ setStatus("שגיאה בהורדה: " + e.message, false); }
-  });
-  setStatus(creds.id ? ("מחובר ל-Gist " + creds.id.slice(0,8) + "…") : "לא מחובר עדיין.");
-})();
-
 // ---------- סנכרון אוטומטי (Supabase) — לוח משותף אוטומטי לכל מי שיש לו את הקישור ----------
 // שורה אחת (row=main) מחזיקה את כל ה-state כ-jsonb. שינוי → העלאה (debounced); טעינה/poll → הורדה.
 // כתיבה פתוחה (לפי בחירת המשתמש): כל מי שיש לו את הקישור יכול לערוך. pexels_key לא מסונכרן.
@@ -1106,7 +1029,7 @@ const DOMAINS=[
   {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","רעיונות עיצוב לפי חדר","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה","לו\"ז ביצוע","מדריך אנשי מקצוע","ספקים והצעות","רשימת קניות"]},
   {key:"handover", label:"מסירה", match:["מסירה ובדק בית"]},
   {key:"property", label:"נכס וסביבה", match:["מיקום, תוכניות","מידות חדרים","סקירת שכונה","פלופ","מגבלות מחיר"]},
-  {key:"system", label:"מערכת", match:["מצב מערכת","סנכרון ענן"]},
+  {key:"system", label:"מערכת", match:["מצב מערכת"]},
 ];
 (function(){
   const wrap=document.querySelector(".wrap"), footer=wrap.querySelector("footer");
@@ -1408,7 +1331,6 @@ def main():
                        for stage in status.get("stages", [])
                    ],
                },
-               "shared_gist_id": p.get("shared_gist_id", ""),
                "supabase": {"url": p.get("supabase_url", ""), "key": p.get("supabase_key", ""),
                             "table": p.get("supabase_table", "board"), "row": p.get("supabase_row", "main")},
                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat()}
@@ -1602,8 +1524,8 @@ def main():
                 # לשונית גלריה (Openverse)
                 '<div class="rc-panel" data-panel="gal">'
                 '<div class="cc-search">'
-                f'<input class="cc-q" data-room="{i}" value="{q}" placeholder="חיפוש תמונות השראה…">'
-                f'<button class="cc-go" data-room="{i}">🔎 חפש</button>'
+                f'<input class="cc-q cell" data-room="{i}" value="{q}" placeholder="חיפוש תמונות השראה…">'
+                f'<button class="cc-go addbtn" data-room="{i}">🔎 חפש</button>'
                 '</div>'
                 f'<div class="cc-results" data-room="{i}" data-search="{q}"></div>'
                 '<div class="pillrow" style="margin-top:8px">' + links + '</div>'
@@ -1675,25 +1597,6 @@ def main():
       <div class="sub">הצינור המלא (משיכת שוק → אימות → snapshot → בניית HTML) רץ ב-GitHub Actions — הקישור פותח את המסך שבו לוחצים <b>"Run workflow"</b>. רץ גם אוטומטית כל יום שני.</div>
       <a class="addbtn" href="{p.get('refresh_workflow_url','#')}" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">🔄 הרץ עדכון נתונים (GitHub Actions) ↗</a>
       <div class="note" style="margin-top:8px">מקומית (מריצים את כל הסקריפטים): <code>python dira-nuriot/update_all.py</code></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>☁️ סנכרון ענן (GitHub Gist)</h2>
-    <div class="card">
-      <div class="sub">מסנכרן את כל נתוני הדשבורד (בחירות, שווי, תמונות שמורות) ל-Gist <b>פרטי</b> ב-GitHub, כדי לעבור בין מכשירים. ⚠️ הטוקן נשמר רק בדפדפן הזה — לא ב-Gist, לא בגיבוי ולא בריפו. אל תשמרו מידע רגיש (ל-Gist "סודי" יש URL נגיש למי שמחזיק בו).</div>
-      <div class="field-grid" style="margin-top:10px">
-        <label>GitHub Token (הרשאת Gists בלבד)<input class="cell" id="gist-token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
-        <label>Gist ID (יתמלא אוטומטית)<input class="cell" id="gist-id" type="text" autocomplete="off" placeholder="נוצר אוטומטית בהעלאה הראשונה"></label>
-      </div>
-      <div class="pillrow" style="margin-top:10px">
-        <button class="addbtn" id="gist-push">⬆ העלה לענן</button>
-        <button class="addbtn" id="gist-pull" style="background:var(--card2);color:var(--ink)">⬇ הורד מהענן</button>
-        <a class="addbtn" style="background:var(--card2);color:var(--ink);text-decoration:none" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">🔑 צור טוקן (Gists: Read and write) ↗</a>
-      </div>
-      <div id="gist-status" class="note" style="margin-top:8px">—</div>
-      <div class="note" style="margin-top:6px">שלבים: (1) צרו טוקן <b>fine-grained</b> עם הרשאת <b>Account → Gists → Read and write</b>. (2) הדביקו אותו כאן. (3) ⬆ העלה — ה-Gist נוצר אוטומטית וה-ID נשמר. (4) במכשיר אחר: אותו טוקן + אותו Gist ID → ⬇ הורד.</div>
-      <div class="note" style="margin-top:6px">🌐 <b>לוח משותף לכולם:</b> אחרי ⬆ העלה, העתיקו את ה-Gist ID והכניסו אותו ב-<code>apartment.json → project.shared_gist_id</code> (ובנו מחדש). אז <b>כל מי שיש לו את קישור האתר</b> יראה אוטומטית את הלוח שפרסמתם (לצפייה; רק לכם יש טוקן לעדכן). {'מצב נוכחי: מפורסם ✓' if p.get('shared_gist_id') else 'מצב נוכחי: לא מפורסם.'}</div>
     </div>
   </section>
 
