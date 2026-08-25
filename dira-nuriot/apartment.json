@@ -12,7 +12,12 @@
     "repo_url": "https://github.com/Iartyom/dira-nuriot",
     "refresh_workflow_url": "https://github.com/Iartyom/dira-nuriot/actions/workflows/refresh-data.yml",
     "shared_gist_id": "",
-    "_shared_gist_id_note": "לפרסום 'לוח משותף' לכל מי שיש לו את קישור האתר: הכניסו כאן את ה-Gist ID של הסנכרון. מבקרים ללא טוקן יטענו אוטומטית את הלוח הזה בכל טעינה. בעל הטוקן (העורך) לא נדרס. ריק = כבוי."
+    "_shared_gist_id_note": "לפרסום 'לוח משותף' לכל מי שיש לו את קישור האתר: הכניסו כאן את ה-Gist ID של הסנכרון. מבקרים ללא טוקן יטענו אוטומטית את הלוח הזה בכל טעינה. בעל הטוקן (העורך) לא נדרס. ריק = כבוי.",
+    "supabase_url": "https://owmkchclxsulaioezjla.supabase.co",
+    "supabase_key": "sb_publishable_GxuTw87i_Z2Tfc9EhQOphw_P-0zNPo8",
+    "supabase_table": "board",
+    "supabase_row": "main",
+    "_supabase_note": "סנכרון אוטומטי — לוח משותף לכל מי שיש לו את קישור האתר (קריאה+כתיבה אנונימית לפי RLS). מפתח publishable הוא ציבורי ובטוח להטמעה; האבטחה נאכפת ב-RLS. כתיבה פתוחה = כל מי שיש לו את הקישור יכול לערוך."
   },
   "unit": {
     "rooms": 6,

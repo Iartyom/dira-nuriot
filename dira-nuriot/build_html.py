@@ -302,7 +302,7 @@ JS = r"""
 const LS = "dira-nuriot-state-v3";
 const LEGACY_LS = "dira-nuriot-state-v2";
 const state = JSON.parse(localStorage.getItem(LS) || localStorage.getItem(LEGACY_LS) || "{}");
-function save(){ localStorage.setItem(LS, JSON.stringify(state)); }
+function save(){ localStorage.setItem(LS, JSON.stringify(state)); try{ if(window.__cloudPush) window.__cloudPush(); }catch(e){} }
 // ----- לוח משותף: מבקרים (ללא טוקן) טוענים אוטומטית את ה-Gist המשותף -----
 // בעל הטוקן (העורך) לא נדרס — רק מבקרים ללא טוקן מסתנכרנים לגרסה שפורסמה.
 (function(){
@@ -804,6 +804,48 @@ function addShopRow(table, d){
   setStatus(creds.id ? ("מחובר ל-Gist " + creds.id.slice(0,8) + "…") : "לא מחובר עדיין.");
 })();
 
+// ---------- סנכרון אוטומטי (Supabase) — לוח משותף אוטומטי לכל מי שיש לו את הקישור ----------
+// שורה אחת (row=main) מחזיקה את כל ה-state כ-jsonb. שינוי → העלאה (debounced); טעינה/poll → הורדה.
+// כתיבה פתוחה (לפי בחירת המשתמש): כל מי שיש לו את הקישור יכול לערוך. pexels_key לא מסונכרן.
+(function(){
+  const cfg = (DATA.supabase||{}); if(!cfg.url || !cfg.key) return;
+  const base = cfg.url.replace(/\/+$/,"") + "/rest/v1/" + (cfg.table||"board");
+  const ROW = cfg.row || "main", MK = "dira-nuriot-cloud-at";
+  const H = { apikey: cfg.key, "Authorization":"Bearer "+cfg.key, "Content-Type":"application/json" };
+  let lastEdit = 0, pushT = null;
+  const stripped = () => { const s = Object.assign({}, state); delete s.pexels_key; return s; };
+  function setCloud(msg, ok){ const el = document.getElementById("cloud-status"); if(!el) return;
+    el.textContent = "☁️ " + msg;
+    el.style.color = ok===false ? "var(--rose,#fb7185)" : (ok ? "var(--green,#22c55e)" : "var(--muted)"); }
+  async function push(){
+    const at = new Date().toISOString();
+    try{
+      const r = await fetch(base, { method:"POST", headers: Object.assign({Prefer:"resolution=merge-duplicates"}, H),
+        body: JSON.stringify([{ id: ROW, data: stripped(), updated_at: at }]) });
+      if(r.ok){ localStorage.setItem(MK, at); setCloud("נשמר בענן ✓ " + new Date().toLocaleTimeString("he-IL"), true); }
+      else setCloud("שגיאת שמירה (" + r.status + ")", false);
+    }catch(e){ setCloud("אין חיבור לענן", false); }
+  }
+  window.__cloudPush = () => { lastEdit = Date.now(); clearTimeout(pushT); pushT = setTimeout(push, 1500); };
+  async function pull(){
+    try{
+      const r = await fetch(base + "?id=eq." + encodeURIComponent(ROW) + "&select=data,updated_at", {headers:H});
+      if(!r.ok) return;
+      const rows = await r.json();
+      if(!rows.length){ push(); return; }               // אין שורה → זרע ממצב מקומי
+      const at = rows[0].updated_at, data = rows[0].data;
+      if(!at || at === localStorage.getItem(MK)) return; // כבר מסונכרן / שלנו
+      if(state.pexels_key) data.pexels_key = state.pexels_key;
+      localStorage.setItem(LS, JSON.stringify(data)); localStorage.setItem(MK, at);
+      location.reload();                                 // רינדור מחדש עם המצב מהענן
+    }catch(e){}
+  }
+  setCloud("מסונכרן", true);
+  pull();
+  // poll עדין — רק כשאין עריכה פעילה (לא לקטוע הקלדה/סימון)
+  setInterval(() => { if(Date.now() - lastEdit > 8000) pull(); }, 25000);
+})();
+
 // ---------- מעקב שווי ----------
 function fmtM(v){ return (v/1000000).toFixed(2)+"M ₪"; }
 function renderValueChart(){
@@ -1271,6 +1313,8 @@ def main():
                    ],
                },
                "shared_gist_id": p.get("shared_gist_id", ""),
+               "supabase": {"url": p.get("supabase_url", ""), "key": p.get("supabase_key", ""),
+                            "table": p.get("supabase_table", "board"), "row": p.get("supabase_row", "main")},
                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat()}
 
     # ----- סקשנים שעוברים לסוף / נוספים -----
@@ -1501,6 +1545,7 @@ def main():
     <button class="addbtn" id="collapse-all" style="background:var(--card2);color:var(--ink)">⊖ כווץ הכל</button>
     <button class="addbtn" id="export-state" style="background:var(--green);color:#052e1a">⬇ גיבוי נתונים</button>
     <label class="addbtn filebtn" style="background:var(--card2);color:var(--ink)">⬆ שחזור גיבוי<input type="file" id="import-state" accept="application/json"></label>
+    <span id="cloud-status" class="note" style="align-self:center;margin-inline-start:auto"></span>
   </div>
   <div class="toast" id="backup-msg">עריכות נשמרות מקומית. מומלץ לייצא גיבוי לאחר שינוי משמעותי.</div>
 {documents_section}
