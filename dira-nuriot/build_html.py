@@ -249,11 +249,31 @@ footer { border-top:1px solid var(--line); padding-top:18px; }
 .src-picker input { flex:1; min-width:220px; background:#0a1728; border:1px solid #243b5b; color:var(--ink);
   border-radius:8px; padding:6px 10px; font-family:inherit; font-size:12.5px; }
 .src-picker a { color:var(--accent); text-decoration:none; font-weight:700; }
-.cc-search { display:flex; gap:6px; margin:12px 0 8px; }
-.cc-q { flex:1; min-width:0; background:var(--bg); border:1px solid var(--line); color:var(--ink);
-  border-radius:8px; padding:7px 10px; font-family:inherit; font-size:13px; }
+/* שדה חיפוש — pill מאוחד עם זוהר פוקוס */
+.cc-search { display:flex; margin:12px 0 8px; border:1px solid var(--line); border-radius:11px; background:var(--bg);
+  overflow:hidden; transition:border-color .15s, box-shadow .15s; }
+.cc-search:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px rgba(56,189,248,.18); }
+.cc-q { flex:1; min-width:0; background:transparent; border:none; color:var(--ink);
+  padding:9px 13px; font-family:inherit; font-size:13px; }
+.cc-q:focus { outline:none; }
+.cc-q::placeholder { color:#5f7392; }
 .cc-go { flex:0 0 auto; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; color:#04263a;
-  background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; border-radius:8px; padding:7px 12px; }
+  background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; padding:9px 16px; transition:filter .15s; }
+.cc-go:hover { filter:brightness(1.08); }
+/* שדות קלט חלקים בכל האפליקציה */
+.cell, .src-picker input { transition:border-color .15s, box-shadow .15s; }
+.cell:focus, .src-picker input:focus, .field-grid input:focus {
+  outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(56,189,248,.18); }
+input::placeholder, textarea::placeholder { color:#5f7392; }
+/* רשימות נערכות — שורת הוספה וכפתור מחיקה */
+.add-row { display:flex; gap:8px; margin-top:12px; }
+.add-row .cell { flex:1; }
+ul[data-elist] li { display:flex; align-items:center; gap:6px; }
+ul[data-elist] li > label { flex:1; }
+.elist-x { border:none; background:transparent; color:var(--muted); cursor:pointer; font-size:13px; line-height:1;
+  padding:3px 7px; border-radius:6px; opacity:.5; transition:opacity .12s, background .12s, color .12s; margin-inline-start:auto; }
+li:hover > .elist-x { opacity:1; }
+.elist-x:hover { background:rgba(220,38,38,.85); color:#fff; opacity:1; }
 /* כרטיסי רעיונות רחבים יותר + גלריה גדולה יותר */
 .room-ideas-grid { grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); }
 .cc-results, .room-saved { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; margin:6px 0; }
@@ -279,6 +299,17 @@ footer { border-top:1px solid var(--line); padding-top:18px; }
 .cctile:hover .cc-cred, .cctile.zoom .cc-cred { opacity:1; }
 .cc-msg { grid-column:1 / -1; font-size:12px; color:var(--muted); padding:8px 4px; }
 .cc-msg.dim { opacity:.7; }
+/* מודל תצוגת תמונה גדולה */
+.img-modal { position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center;
+  background:rgba(3,8,16,.86); padding:24px; }
+.img-modal.open { display:flex; }
+.img-modal-inner { position:relative; max-width:94vw; max-height:94vh; display:flex; flex-direction:column; align-items:center; }
+.img-modal-inner img { max-width:94vw; max-height:86vh; border-radius:12px; box-shadow:0 24px 70px rgba(0,0,0,.65); background:#000; }
+.img-modal-x { position:absolute; top:-14px; inset-inline-end:-14px; width:38px; height:38px; border-radius:50%;
+  border:none; cursor:pointer; font-size:17px; font-weight:700; background:#fff; color:#04263a; box-shadow:0 4px 16px rgba(0,0,0,.5); }
+.img-modal-cred { margin-top:12px; color:#e6eef8; font-size:12.5px; text-decoration:none;
+  background:rgba(4,12,22,.72); padding:6px 14px; border-radius:999px; }
+.img-modal-cred:hover { background:rgba(56,189,248,.9); color:#04263a; }
 /* כרטיס עם לשוניות (עיצוב ג') */
 .rc-head { display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; }
 .savecount { font-size:12px; font-weight:700; color:#f5c451; white-space:nowrap; }
@@ -494,6 +525,47 @@ document.querySelectorAll("input.action").forEach(c=>{
   c.addEventListener("change",()=>{ state[k]=c.checked; save(); c.closest("li").classList.toggle("done",c.checked); });
 });
 
+// ---------- רשימות נערכות: הוסף/הסר פריטים בכל רשימה עם data-elist (מסונכרן) ----------
+// עובד על הרשימות הקיימות (דברים לביצוע, משימות לפני מפתח): הסרת פריט מובנה מוסתרת
+// לפי מפתח יציב (data-id), ופריטים מותאמים נשמרים ב-state (add_<id>).
+(function(){
+  const keyOf = li => { const cb=li.querySelector('input[data-id]');
+    return cb ? "id:"+cb.dataset.id : "tx:"+li.textContent.replace(/[✕\s]+$/,"").trim(); };
+  document.querySelectorAll("ul[data-elist]").forEach(ul=>{
+    const id=ul.dataset.elist, RK="rm_"+id, AK="add_"+id;
+    state[RK]=state[RK]||{}; state[AK]=state[AK]||[];
+    function addX(li, onDel){ if(li.querySelector(".elist-x")) return;
+      const x=document.createElement("button"); x.className="elist-x"; x.textContent="✕"; x.title="הסר פריט";
+      x.addEventListener("click", onDel); li.appendChild(x); }
+    function render(){
+      ul.querySelectorAll("li.elist-custom").forEach(l=>l.remove());
+      ul.querySelectorAll("li").forEach(li=>{
+        addX(li, ()=>{ state[RK][keyOf(li)]=1; save(); render(); });
+        li.style.display = state[RK][keyOf(li)] ? "none" : "";
+      });
+      (state[AK]||[]).forEach((t,i)=>{
+        const li=document.createElement("li"); li.className="elist-custom"; if(t.done) li.classList.add("done");
+        const lbl=document.createElement("label");
+        const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!t.done;
+        cb.addEventListener("change",()=>{ t.done=cb.checked; li.classList.toggle("done",cb.checked); save(); });
+        lbl.appendChild(cb); lbl.appendChild(document.createTextNode(" "+t.text));
+        li.appendChild(lbl);
+        addX(li, ()=>{ state[AK].splice(i,1); save(); render(); });
+        ul.appendChild(li);
+      });
+    }
+    ul.__erender = render; render();
+  });
+  document.querySelectorAll(".elist-add").forEach(btn=>{
+    const id=btn.dataset.elist, inp=document.querySelector('.elist-input[data-elist="'+id+'"]'),
+          ul=document.querySelector('ul[data-elist="'+id+'"]');
+    function add(){ const v=inp.value.trim(); if(!v) return;
+      (state["add_"+id]=state["add_"+id]||[]).push({text:v,done:false}); inp.value=""; save(); if(ul.__erender) ul.__erender(); }
+    btn.addEventListener("click", add);
+    inp.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); add(); } });
+  });
+})();
+
 // ---------- בדק בית צ'קליסט ----------
 function recalcHand(){
   const all=document.querySelectorAll("input.handcheck");
@@ -589,6 +661,25 @@ function addShopRow(table, d){
     const el = document.getElementById("saved-img-count"); if (el) el.textContent = n;
   }
 
+  // ----- מודל תצוגת תמונה גדולה -----
+  const modal = document.createElement("div"); modal.className = "img-modal";
+  modal.innerHTML = '<div class="img-modal-inner"><button class="img-modal-x" title="סגור">✕</button>'
+    + '<img alt="תצוגה מוגדלת"><a class="img-modal-cred" target="_blank" rel="noopener nofollow"></a></div>';
+  document.body.appendChild(modal);
+  const mImg = modal.querySelector("img"), mCred = modal.querySelector(".img-modal-cred");
+  function closeModal(){ modal.classList.remove("open"); mImg.removeAttribute("src"); }
+  modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+  modal.querySelector(".img-modal-x").addEventListener("click", closeModal);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+  function openModal(item){
+    mImg.onerror = () => { mImg.onerror = null; mImg.src = item.thumb || item.src || ""; };
+    mImg.src = item.full || item.src || item.thumb || "";
+    if (item.srcurl || item.by){ mCred.href = item.srcurl || item.licurl || "#"; mCred.style.display = "";
+      const lic = item.lic === "Pexels" ? "Pexels" : (item.lic ? "CC " + item.lic : "");
+      mCred.textContent = (item.by ? item.by + " · " : "") + lic + " ↗"; }
+    else mCred.style.display = "none";
+    modal.classList.add("open");
+  }
   function credLink(item){
     const a = document.createElement("a"); a.className = "cc-cred"; a.target = "_blank"; a.rel = "noopener nofollow";
     a.href = item.srcurl || item.licurl || "#";
@@ -615,13 +706,18 @@ function addShopRow(table, d){
       + "&page_size=20&page=" + page + "&mature=false", {headers:{Accept:"application/json"}});
     if (!r.ok) throw new Error("HTTP " + r.status);
     const j = await r.json();
-    return { items:(j.results||[]).filter(x=>x.thumbnail).map(ovMap), pageCount: j.page_count||1 };
+    // סינון רלוונטיות: משאיר רק תוצאות שהכותרת/תגיות שלהן קשורות לעיצוב פנים
+    // (Openverse הוא מאגר כללי — מסנן דיוקנאות/נופים/חוץ לא רלוונטיים)
+    const REL = /kitchen|bath|shower|bedroom|living|dining|interior|closet|wardrobe|balcon|patio|apartment|sofa|couch|toilet|powder|tiles|backsplash|countertop|vanity|cabinet|ensuite|renovat|decor|lounge|furnitur/i;
+    const rel = (j.results||[]).filter(x => x.thumbnail &&
+      REL.test((x.title||"") + " " + ((x.tags||[]).map(t=>t.name).join(" "))));
+    return { items: rel.map(ovMap), pageCount: j.page_count||1 };
   }
   // ----- גלריה חיה -----
   function tileCC(k, item){
     const fig = document.createElement("figure"); fig.className = "cctile";
     const im = document.createElement("img"); im.src = item.thumb; im.loading = "lazy"; im.alt = esc(item.title);
-    im.addEventListener("click", () => fig.classList.toggle("zoom"));
+    im.addEventListener("click", () => openModal(item));
     const bar = document.createElement("div"); bar.className = "cc-bar";
     const like = document.createElement("button"); like.className = "cc-like";
     const setLike = () => { const s = isSaved(k,item); like.textContent = s ? "🔖" : "🏷️";
@@ -670,7 +766,7 @@ function addShopRow(table, d){
     arr.forEach(item => {
       const fig = document.createElement("figure"); fig.className = "cctile saved";
       const im = document.createElement("img"); im.src = item.t==="cc" ? item.thumb : item.src; im.loading = "lazy"; im.alt = "שמור";
-      im.addEventListener("click", () => fig.classList.toggle("zoom"));
+      im.addEventListener("click", () => openModal(item));
       const bar = document.createElement("div"); bar.className = "cc-bar";
       const del = document.createElement("button"); del.className = "cc-del"; del.textContent = "✕"; del.title = "הסר";
       del.addEventListener("click", () => { const i = arr.indexOf(item); if (i>=0) arr.splice(i,1);
@@ -1328,13 +1424,23 @@ def main():
     <div class="warn" style="background:#06281f;border-color:#22c55e;color:#bbf7d0">⚡ {reno.get('shortest_path','')}</div>
     <div class="card" style="margin-top:10px">
       <h3>✅ משימות שאפשר להשלים לפני קבלת המפתח</h3>
-      <ul class="flat">{prep_html}</ul>
+      <ul class="flat" data-elist="prep">{prep_html}</ul>
+      <div class="add-row">
+        <input class="cell elist-input" data-elist="prep" placeholder="הוסיפו משימה משלכם…">
+        <button class="addbtn elist-add" data-elist="prep">+ הוסף</button>
+      </div>
     </div>
   </section>"""
     action_section = f"""
   <section>
     <h2>📋 דברים לביצוע</h2>
-    <div class="card"><ul class="flat">{action_html}</ul></div>
+    <div class="card">
+      <ul class="flat" data-elist="action">{action_html}</ul>
+      <div class="add-row">
+        <input class="cell elist-input" data-elist="action" placeholder="הוסיפו פריט משלכם…">
+        <button class="addbtn elist-add" data-elist="action">+ הוסף</button>
+      </div>
+    </div>
   </section>"""
     restr_section = f"""
   <section>
