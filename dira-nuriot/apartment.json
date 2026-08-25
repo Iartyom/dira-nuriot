@@ -15,7 +15,9 @@
     "supabase_key": "sb_publishable_GxuTw87i_Z2Tfc9EhQOphw_P-0zNPo8",
     "supabase_table": "board",
     "supabase_row": "main",
-    "_supabase_note": "סנכרון אוטומטי — לוח משותף לכל מי שיש לו את קישור האתר (קריאה+כתיבה אנונימית לפי RLS). מפתח publishable הוא ציבורי ובטוח להטמעה; האבטחה נאכפת ב-RLS. כתיבה פתוחה = כל מי שיש לו את הקישור יכול לערוך."
+    "_supabase_note": "סנכרון אוטומטי — לוח משותף לכל מי שיש לו את קישור האתר (קריאה+כתיבה אנונימית לפי RLS). מפתח publishable הוא ציבורי ובטוח להטמעה; האבטחה נאכפת ב-RLS. כתיבה פתוחה = כל מי שיש לו את הקישור יכול לערוך.",
+    "pexels_key": "U8gPRmt7N06ttWpRPmyrzqV5iCXAWFqTIQDcenAyBrAZfHMMXuTKKy2w",
+    "_pexels_note": "מפתח Pexels לגלריית תמונות עיצוב-פנים איכותיות (מוטמע → אוטומטי לכל מבקר). מפתח חינם; חשיפה = ניצול מכסה בלבד (200/שעה, 20K/חודש)."
   },
   "unit": {
     "rooms": 6,

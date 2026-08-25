@@ -245,18 +245,13 @@ footer { border-top:1px solid var(--line); padding-top:18px; }
 .chip-toggle { font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; color:var(--muted);
   background:var(--card2); border:1px solid var(--line); border-radius:999px; padding:5px 12px; }
 .chip-toggle.on { color:#04263a; background:linear-gradient(135deg,#f5c451,#f59e0b); border-color:transparent; }
-.src-picker { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:8px 0 2px; padding:9px 12px;
-  background:linear-gradient(180deg,#0f2137,#0d1b2f); border:1px solid var(--line); border-radius:12px; font-size:13px; }
-.src-picker input { flex:1; min-width:220px; background:#0a1728; border:1px solid #243b5b; color:var(--ink);
-  border-radius:8px; padding:6px 10px; font-family:inherit; font-size:12.5px; }
-.src-picker a { color:var(--accent); text-decoration:none; font-weight:700; }
 /* שדה חיפוש — עקבי עם שאר האפליקציה (.cell + .addbtn) */
 .cc-search { display:flex; gap:8px; margin:12px 0 8px; }
 .cc-q { flex:1; min-width:0; }
 .cc-go { flex:0 0 auto; margin-top:0; }
 /* פוקוס עדין ועקבי לכל שדות הקלט */
 .cell { transition:border-color .15s; }
-.cell:focus, .src-picker input:focus, .field-grid input:focus { outline:none; border-color:var(--accent); }
+.cell:focus, .field-grid input:focus { outline:none; border-color:var(--accent); }
 input::placeholder, textarea::placeholder { color:#5f7392; }
 /* רשימות נערכות — שורת הוספה וכפתור מחיקה */
 .add-row { display:flex; gap:8px; margin-top:12px; }
@@ -669,7 +664,7 @@ function addShopRow(table, d){
     title:p.alt||"", by:p.photographer||"", lic:"Pexels", licurl:p.url||"", src:"pexels", srcurl:p.url||"" }; }
   // מקור התמונות: Pexels אם הוזן מפתח (איכותי, ממוקד עיצוב פנים), אחרת Openverse (חינם, ללא מפתח)
   async function fetchImages(q, page){
-    const key = (state.pexels_key||"").trim();
+    const key = (state.pexels_key || DATA.pexels_key || "").trim();
     if (key){
       const r = await fetch("https://api.pexels.com/v1/search?query=" + encodeURIComponent(q + " interior")
         + "&per_page=20&page=" + page + "&orientation=landscape", {headers:{Authorization:key}});
@@ -791,24 +786,6 @@ function addShopRow(table, d){
         if (box && !box.dataset.loaded) search(k, box.dataset.search); }
     }));
   });
-  // בוחר מקור התמונות (Pexels/Openverse)
-  (function(){
-    const inp = document.getElementById("px-key"), btn = document.getElementById("px-save"),
-          st2 = document.getElementById("px-status");
-    if (!inp) return;
-    const status = () => { st2.textContent = (state.pexels_key && state.pexels_key.trim())
-      ? "מקור נוכחי: Pexels ✓ (איכותי)" : "מקור נוכחי: Openverse (חינם)"; };
-    if (state.pexels_key) inp.value = state.pexels_key;
-    status();
-    btn.addEventListener("click", () => {
-      state.pexels_key = inp.value.trim(); save(); status();
-      // אפס וטען מחדש גלריות שכבר נטענו — מהמקור החדש
-      document.querySelectorAll('.cc-results[data-loaded="1"]').forEach(box => {
-        box.dataset.loaded = ""; box.dataset.page = "0"; box.dataset.more = "1"; box.innerHTML = "";
-        if (box.offsetParent) search(box.dataset.room, box.dataset.q, true);
-      });
-    });
-  })();
   // render saved on load
   document.querySelectorAll(".room-saved").forEach(b => renderSaved(b.dataset.room));
   updateCount();
@@ -1333,6 +1310,7 @@ def main():
                },
                "supabase": {"url": p.get("supabase_url", ""), "key": p.get("supabase_key", ""),
                             "table": p.get("supabase_table", "board"), "row": p.get("supabase_row", "main")},
+               "pexels_key": p.get("pexels_key", ""),
                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat()}
 
     # ----- סקשנים שעוברים לסוף / נוספים -----
@@ -1493,11 +1471,6 @@ def main():
         # מפתח חדר = אינדקס מספרי (יציב, ונמנע מבעיות ציטוט בשמות עם " כמו ממ"ד)
         for i, r in enumerate(ridea["rooms"]):
             ideas = "".join(f"<li>{it}</li>" for it in r.get("ideas", []))
-            links = "".join(
-                f'<a class="addbtn" href="{lk.get("url","#")}" target="_blank" rel="noopener" '
-                f'style="display:inline-block;text-decoration:none;margin:4px 4px 0 0">{lk.get("label","")} ↗</a>'
-                for lk in r.get("links", [])
-            )
             note = (f'<div class="note" style="margin-bottom:8px">{r.get("note","")}</div>'
                     if r.get("note") else "")
             q = (r.get("search_en", "") or "").replace('"', '&quot;')
@@ -1518,17 +1491,15 @@ def main():
                 '</div>'
                 # לשונית רעיונות
                 '<div class="rc-panel on" data-panel="ideas">'
-                f'<ul class="flat" style="margin:0 0 10px">{ideas}</ul>'
-                f'<div class="pillrow">{links}</div>'
+                f'<ul class="flat" style="margin:0">{ideas}</ul>'
                 '</div>'
-                # לשונית גלריה (Openverse)
+                # לשונית גלריה (Pexels/Openverse)
                 '<div class="rc-panel" data-panel="gal">'
                 '<div class="cc-search">'
                 f'<input class="cc-q cell" data-room="{i}" value="{q}" placeholder="חיפוש תמונות השראה…">'
                 f'<button class="cc-go addbtn" data-room="{i}">🔎 חפש</button>'
                 '</div>'
                 f'<div class="cc-results" data-room="{i}" data-search="{q}"></div>'
-                '<div class="pillrow" style="margin-top:8px">' + links + '</div>'
                 '</div>'
                 # לשונית שמורים
                 '<div class="rc-panel" data-panel="saved">'
@@ -1546,14 +1517,6 @@ def main():
     <div class="saved-filter">
       <button class="chip-toggle" id="saved-only-toggle" aria-pressed="false">🔖 הצג שמורים בלבד (<span id="saved-img-count">0</span>)</button>
       <span class="note" style="margin:0">גלריה חיה (דורשת אינטרנט). 🔖 = שמור להשראה (מקומי + בגיבוי). לגלול בתוך הכרטיס לעוד תמונות; אפשר גם להעלות תמונה משלך.</span>
-    </div>
-    <div class="src-picker">
-      <span>🖼️ מקור תמונות:</span>
-      <input id="px-key" type="text" autocomplete="off" placeholder="הדביקו מפתח Pexels לתמונות עיצוב-פנים איכותיות (אופציונלי)">
-      <button id="px-save" class="cc-go">שמור</button>
-      <a href="https://www.pexels.com/api/" target="_blank" rel="noopener">קבלת מפתח חינם ↗</a>
-      <span id="px-status" class="note" style="margin:0"></span>
-      <span class="note" style="margin:0;flex-basis:100%">ללא מפתח: Openverse (חינם, אך פחות ממוקד). המפתח נשמר רק בדפדפן שלכם (localStorage) — לא נשלח לריפו/לאתר.</span>
     </div>
     <div class="grid room-ideas-grid" style="margin-top:10px">{''.join(cards)}</div>
   </section>"""
