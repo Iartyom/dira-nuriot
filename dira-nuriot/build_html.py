@@ -806,10 +806,10 @@ function addShopRow(table, d){
       card.querySelectorAll(".rc-panel").forEach(p => p.classList.toggle("on", p.dataset.panel === btn.dataset.tab));
       if (btn.dataset.tab === "gal"){ const box = card.querySelector(".cc-results");
         if (box && !box.dataset.loaded) search(k, box.dataset.search); }
+      if (btn.dataset.tab === "saved") renderSaved(k); // טוען שמורים רק בכניסה ללשונית
     }));
   });
-  // render saved on load
-  document.querySelectorAll(".room-saved").forEach(b => renderSaved(b.dataset.room));
+  // בטעינה: רק המונים (מ-state, בלי לטעון תמונות); רצועת השמורים נטענת בכניסה ללשונית
   updateCount();
   // גלילה אינסופית בתוך הכרטיס: כל גלריה מאזינה לסקרול של עצמה,
   // וטוענת עמוד נוסף כשמתקרבים לתחתית ה-pane.
@@ -855,8 +855,21 @@ function addShopRow(table, d){
   }
   window.__cloudPush = () => { lastLocalChange = Date.now(); clearTimeout(pushTimer);
     pushTimer = setTimeout(() => { pushTimer = null; push(); }, 1500); };
-  async function pull(){
-    // לא מושכים/מרעננים כל עוד יש שינוי מקומי שטרם נשמר — מונע איבוד שמירה וקפיצה לראש
+  // מחיל עדכון מהענן — רק בפעולת משתמש מפורשת (לחיצה על "רענן"), אף פעם לא אוטומטית באמצע גלישה
+  function applyRemote(data, at){
+    if(state.pexels_key) data.pexels_key = state.pexels_key;
+    localStorage.setItem(LS, JSON.stringify(data)); localStorage.setItem(MK, at);
+    location.reload();
+  }
+  function showUpdate(data, at){
+    const el = document.getElementById("cloud-status"); if(!el) return;
+    el.innerHTML = '🔄 עדכון מהענן זמין — <u>רענן</u>';
+    el.style.color = "var(--gold,#f5c451)"; el.style.cursor = "pointer";
+    el.onclick = () => applyRemote(data, at);
+  }
+  // firstLoad=true בטעינת הדף: אם זה דפדפן חדש (לא סונכרן) נטען אוטומטית; אחרת באנר בלבד.
+  async function pull(firstLoad){
+    // לעולם לא מרעננים כשיש שינוי מקומי בהמתנה/בהעלאה — מונע איבוד שמירה וקפיצה
     if(pushTimer || pushInFlight || Date.now() - lastLocalChange < 4000) return;
     try{
       const r = await fetch(base + "?id=eq." + encodeURIComponent(ROW) + "&select=data,updated_at", {headers:H});
@@ -864,16 +877,16 @@ function addShopRow(table, d){
       const rows = await r.json();
       if(!rows.length){ push(); return; }               // אין שורה → זרע ממצב מקומי
       const at = rows[0].updated_at, data = rows[0].data;
-      if(!at || at === localStorage.getItem(MK)) return; // אין שינוי אמיתי (זהה למה ששמרנו)
-      if(state.pexels_key) data.pexels_key = state.pexels_key;
-      localStorage.setItem(LS, JSON.stringify(data)); localStorage.setItem(MK, at);
-      location.reload();                                 // שינוי אמיתי ממכשיר אחר — רינדור מחדש
+      if(!at || at === localStorage.getItem(MK)) return; // אין שינוי אמיתי
+      // רק בטעינה ראשונה של דפדפן שמעולם לא סונכרן — טען אוטומטית (אין גלישה לאבד)
+      if(firstLoad && !localStorage.getItem(MK)) applyRemote(data, at);
+      else showUpdate(data, at);                          // אחרת: באנר בלבד, המשתמש מרענן מתי שנוח
     }catch(e){}
   }
   setCloud("מסונכרן", true);
-  pull();
-  // poll עדין — רק כשלא נגעת כלום 8ש' (לא לקטוע גלישה/סימון)
-  setInterval(() => { if(Date.now() - lastLocalChange > 8000) pull(); }, 25000);
+  pull(true);
+  // poll עדין — אף פעם לא מרענן לבד; רק מציג "עדכון זמין" אם השתנה במכשיר אחר
+  setInterval(() => { if(Date.now() - lastLocalChange > 8000) pull(false); }, 25000);
 })();
 
 // ---------- מעקב שווי ----------
