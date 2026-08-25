@@ -40,9 +40,15 @@ stdlib only). On this Windows box, invoke the Python scripts directly instead.
 ## Architecture
 
 **Data-driven, no runtime server.** Four JSON files in `dira-nuriot/` are the source of truth;
-`build_html.py` embeds them into a fully self-contained `index.html` (inline CSS/JS, no external
-requests) that runs offline and persists user edits to `localStorage`. Do not hand-edit
-`index.html` — regenerate it from the data.
+`build_html.py` embeds them into `index.html` (inline CSS/JS) that persists user edits to
+`localStorage`. Do not hand-edit `index.html` — regenerate it from the data.
+
+The core dashboard runs **offline**, but three opt-in features call external services at view time
+(keys embedded in `apartment.json → project`): the room-ideas **image gallery** (Pexels, Openverse
+fallback), and **cloud sync + shared board** (Supabase — every `save()` upserts the whole `state`
+to one row; anyone with the link reads/writes it). Credentials embedded are public-safe by design
+(Supabase publishable key under RLS; free Pexels key — exposure is quota only). Manual
+export/import JSON backup remains for offline use.
 
 - `apartment.json` — fixed facts + `valuation` + `valuation_history` + selling restrictions + to-dos. Source of truth for value.
 - `renovation.json` — renovation budget (2026 ranges) + Gantt schedule.
