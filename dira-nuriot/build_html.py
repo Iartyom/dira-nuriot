@@ -296,9 +296,14 @@ li:hover > .elist-x { opacity:1; }
 .img-modal-inner img { max-width:94vw; max-height:86vh; border-radius:12px; box-shadow:0 24px 70px rgba(0,0,0,.65); background:#000; }
 .img-modal-x { position:absolute; top:-14px; inset-inline-end:-14px; width:38px; height:38px; border-radius:50%;
   border:none; cursor:pointer; font-size:17px; font-weight:700; background:#fff; color:#04263a; box-shadow:0 4px 16px rgba(0,0,0,.5); }
-.img-modal-cred { margin-top:12px; color:#e6eef8; font-size:12.5px; text-decoration:none;
+.img-modal-cred { color:#e6eef8; font-size:12.5px; text-decoration:none;
   background:rgba(4,12,22,.72); padding:6px 14px; border-radius:999px; }
 .img-modal-cred:hover { background:rgba(56,189,248,.9); color:#04263a; }
+.img-modal-bar { margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+.img-modal-save { font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; border:none;
+  border-radius:999px; padding:7px 18px; background:rgba(255,255,255,.16); color:#e6eef8; }
+.img-modal-save.on { background:linear-gradient(135deg,#f5c451,#f59e0b); color:#2a1e04; }
+.img-modal-save:hover { filter:brightness(1.1); }
 /* כרטיס עם לשוניות (עיצוב ג') */
 .rc-head { display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; }
 .savecount { font-size:12px; font-weight:700; color:#f5c451; white-space:nowrap; }
@@ -631,25 +636,42 @@ function addShopRow(table, d){
     const el = document.getElementById("saved-img-count"); if (el) el.textContent = n;
   }
 
-  // ----- מודל תצוגת תמונה גדולה -----
+  // ----- מודל תצוגת תמונה גדולה (עם שמירה) -----
   const modal = document.createElement("div"); modal.className = "img-modal";
   modal.innerHTML = '<div class="img-modal-inner"><button class="img-modal-x" title="סגור">✕</button>'
-    + '<img alt="תצוגה מוגדלת"><a class="img-modal-cred" target="_blank" rel="noopener nofollow"></a></div>';
+    + '<img alt="תצוגה מוגדלת">'
+    + '<div class="img-modal-bar"><button class="img-modal-save"></button>'
+    + '<a class="img-modal-cred" target="_blank" rel="noopener nofollow"></a></div></div>';
   document.body.appendChild(modal);
-  const mImg = modal.querySelector("img"), mCred = modal.querySelector(".img-modal-cred");
-  function closeModal(){ modal.classList.remove("open"); mImg.removeAttribute("src"); }
+  const mImg = modal.querySelector("img"), mCred = modal.querySelector(".img-modal-cred"),
+        mSave = modal.querySelector(".img-modal-save");
+  let mK = null, mItem = null;
+  function closeModal(){ modal.classList.remove("open"); mImg.removeAttribute("src"); mK = null; mItem = null; }
   modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
   modal.querySelector(".img-modal-x").addEventListener("click", closeModal);
   document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
-  function openModal(item){
+  function refreshSave(){ if (mK == null || !mItem){ mSave.style.display = "none"; return; }
+    mSave.style.display = ""; const s = isSaved(mK, mItem);
+    mSave.textContent = s ? "🔖 שמור ✓" : "🏷️ שמור להשראה"; mSave.classList.toggle("on", s); }
+  mSave.addEventListener("click", () => { if (mK == null || !mItem) return;
+    const arr = savedFor(mK), idx = arr.findIndex(s => same(s, mItem));
+    if (idx >= 0) arr.splice(idx, 1); else arr.push(mItem);
+    if (persist()){ refreshSave(); renderSaved(mK); updateCount(); if (mK != null) markTiles(mK); } });
+  function openModal(k, item){
+    mK = k; mItem = item;
     mImg.onerror = () => { mImg.onerror = null; mImg.src = item.thumb || item.src || ""; };
     mImg.src = item.full || item.src || item.thumb || "";
     if (item.srcurl || item.by){ mCred.href = item.srcurl || item.licurl || "#"; mCred.style.display = "";
       const lic = item.lic === "Pexels" ? "Pexels" : (item.lic ? "CC " + item.lic : "");
       mCred.textContent = (item.by ? item.by + " · " : "") + lic + " ↗"; }
     else mCred.style.display = "none";
+    refreshSave();
     modal.classList.add("open");
   }
+  // מסנכרן את סימון ה-🔖 באריחי הגלריה החיה של חדר לאחר שינוי (מהמודל)
+  function markTiles(k){ const box = document.querySelector('.cc-results[data-room="'+k+'"]'); if(!box) return;
+    box.querySelectorAll(".cctile .cc-like").forEach(btn => { if (btn.__item){ const s = isSaved(k, btn.__item);
+      btn.textContent = s ? "🔖" : "🏷️"; btn.closest(".cctile").classList.toggle("saved", s); } }); }
   function credLink(item){
     const a = document.createElement("a"); a.className = "cc-cred"; a.target = "_blank"; a.rel = "noopener nofollow";
     a.href = item.srcurl || item.licurl || "#";
@@ -687,9 +709,9 @@ function addShopRow(table, d){
   function tileCC(k, item){
     const fig = document.createElement("figure"); fig.className = "cctile";
     const im = document.createElement("img"); im.src = item.thumb; im.loading = "lazy"; im.alt = esc(item.title);
-    im.addEventListener("click", () => openModal(item));
+    im.addEventListener("click", () => openModal(k, item));
     const bar = document.createElement("div"); bar.className = "cc-bar";
-    const like = document.createElement("button"); like.className = "cc-like";
+    const like = document.createElement("button"); like.className = "cc-like"; like.__item = item;
     const setLike = () => { const s = isSaved(k,item); like.textContent = s ? "🔖" : "🏷️";
       like.title = s ? "הסר משמורים" : "שמור להשראה"; fig.classList.toggle("saved", s); };
     like.addEventListener("click", () => { const arr = savedFor(k), idx = arr.findIndex(s => same(s,item));
@@ -736,7 +758,7 @@ function addShopRow(table, d){
     arr.forEach(item => {
       const fig = document.createElement("figure"); fig.className = "cctile saved";
       const im = document.createElement("img"); im.src = item.t==="cc" ? item.thumb : item.src; im.loading = "lazy"; im.alt = "שמור";
-      im.addEventListener("click", () => openModal(item));
+      im.addEventListener("click", () => openModal(k, item));
       const bar = document.createElement("div"); bar.className = "cc-bar";
       const del = document.createElement("button"); del.className = "cc-del"; del.textContent = "✕"; del.title = "הסר";
       del.addEventListener("click", () => { const i = arr.indexOf(item); if (i>=0) arr.splice(i,1);
