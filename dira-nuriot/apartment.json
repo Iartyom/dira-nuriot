@@ -89,7 +89,7 @@
     "schedule": [
       { "date": "2025-12-07", "amount_incl_vat": 169798.09, "indexed": false, "paid": true },
       { "date": "2026-01-18", "amount_incl_vat": 315339.31, "indexed": false, "paid": true },
-      { "date": "2026-06-07", "amount_incl_vat": 242568.70, "indexed": true, "paid": false },
+      { "date": "2026-06-07", "amount_incl_vat": 242568.70, "indexed": true, "paid": true, "paid_amount": 242569, "paid_note": "שולם סכום הבסיס בלבד — השובר לא כלל הפרשי הצמדה (לברר מול היזם אם ייגבו בהמשך)" },
       { "date": "2026-10-07", "amount_incl_vat": 242568.70, "indexed": true, "paid": false },
       { "date": "2027-02-07", "amount_incl_vat": 242568.70, "indexed": true, "paid": false },
       { "date": "2027-06-07", "amount_incl_vat": 242568.70, "indexed": true, "paid": false },

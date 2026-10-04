@@ -481,22 +481,49 @@ function payIndexInfo(p){
           label:(projected?"משוער · ":"")+m+" · "+idxContract.toFixed(2)+" · +"+nis(extra)};
 }
 function payIsPaid(p){ const k="paid_"+p.date; return state[k]===undefined?p.paid:state[k]; }
+// Actual amount transferred (state edit > apartment.json paid_amount > computed). Kept apart from
+// the computed linked amount because developers often bill linkage later — the difference is
+// tracked as "open linkage" (possible future charge), not silently assumed settled.
+function payActual(p, info){
+  const v=parseFloat(state["paidamt_"+p.date]);
+  if(!isNaN(v)) return v;
+  if(p.paid_amount!=null) return p.paid_amount;
+  return (info||payIndexInfo(p)).eff;
+}
+function payOpenGap(p, info){
+  if(!payIsPaid(p)) return 0;
+  info=info||payIndexInfo(p);
+  const gap=info.eff-payActual(p, info);
+  return gap>1?gap:0;  // ₪1 tolerance for agorot rounding on the voucher
+}
 function recalcPayments(){
   const byDate={}; (DATA.payments||[]).forEach(p=>byDate[p.date]=p);
-  let paid=0, remaining=0, extra=0; let nextEl=null, nextEff=0;
+  let paid=0, remBase=0, remLink=0, openGap=0, extra=0; let nextEl=null, nextEff=0;
   document.querySelectorAll(".paychk").forEach(c => {
     const p=byDate[c.dataset.date]||{date:c.dataset.date,amount_incl_vat:parseFloat(c.dataset.amt)||0,indexed:c.dataset.indexed==="1"};
     const info=payIndexInfo(p), tr=c.closest("tr");
     extra+=info.extra;
     const cell=tr.querySelector(".amt-cell");
-    if(cell) cell.textContent = nis(info.eff) + (p.indexed?" 🔗":"");
+    if(cell) cell.textContent = nis(info.eff);
     const ic=tr.querySelector(".idx-cell"); if(ic && p.indexed) ic.textContent=info.label;
-    if(c.checked){ paid+=info.eff; tr.querySelector(".paid-cell").innerHTML='<span class="paid-yes">✓ שולם</span>'; }
-    else { remaining+=info.eff; tr.querySelector(".paid-cell").innerHTML='<span class="paid-no">ממתין</span>';
-           if(!nextEl){ nextEl=c; nextEff=info.eff; } }
+    const pa=tr.querySelector(".paidamt"), pc=tr.querySelector(".paid-cell");
+    if(c.checked){
+      const actual=payActual(p, info), gap=payOpenGap(p, info);
+      paid+=actual; openGap+=gap;
+      if(pa){ pa.disabled=false; if(document.activeElement!==pa) pa.value=Math.round(actual*100)/100; }
+      pc.innerHTML='<span class="paid-yes">✓ שולם</span>'+(gap?'<br><span style="color:var(--gold);font-size:12px">⚠️ הצמדה פתוחה '+nis(gap)+'</span>':'');
+    } else {
+      remBase+=p.amount_incl_vat; remLink+=info.extra;
+      if(pa){ pa.disabled=true; pa.value=""; }
+      pc.innerHTML='<span class="paid-no">ממתין</span>';
+      if(!nextEl){ nextEl=c; nextEff=info.eff; } }
   });
   document.getElementById("paid-total").textContent=nis(paid);
-  document.getElementById("remaining-total").textContent=nis(remaining);
+  const ol=document.getElementById("open-linkage-total"); if(ol) ol.textContent=nis(openGap);
+  // Remaining = unpaid base + their linkage + linkage still open on paid rows (may be billed later).
+  document.getElementById("remaining-total").textContent=nis(remBase+remLink+openGap);
+  const rs=document.getElementById("remaining-split");
+  if(rs) rs.textContent="(בסיס "+nis(remBase)+" + הצמדה "+nis(remLink)+(openGap?" + פתוחה "+nis(openGap):"")+")";
   const ie=document.getElementById("index-extra"); if(ie) ie.textContent=(extra>0?"+":"")+nis(extra);
   const months=Object.keys(IDX.series||{}).sort(), latest=months[months.length-1];
   const is=document.getElementById("index-status");
@@ -505,7 +532,8 @@ function recalcPayments(){
   const hnp=document.getElementById("hero-nextpay"), hnps=document.getElementById("hero-nextpay-sub");
   if(nextEl){
     nb.style.display="block";
-    nb.innerHTML='⏭️ התשלום הבא: <b>'+nextEl.dataset.date+'</b> · '+nis(nextEff);
+    nb.innerHTML='⏭️ התשלום הבא: <b>'+nextEl.dataset.date+'</b> · '+nis(nextEff)+
+      (openGap?' <span style="font-size:13px;color:var(--gold)">(+ עד '+nis(openGap)+' הצמדה פתוחה מתשלומים קודמים, אם תיגבה)</span>':'');
     if(hnp) hnp.textContent=nis(nextEff); if(hnps) hnps.textContent=nextEl.dataset.date; }
   else { nb.style.display="none"; if(hnp) hnp.textContent="הושלם"; if(hnps) hnps.textContent="כל התשלומים שולמו"; }
 }
@@ -513,6 +541,11 @@ document.querySelectorAll(".paychk").forEach(c=>{
   const k="paid_"+c.dataset.date;
   if(state[k]!==undefined) c.checked=state[k];
   c.addEventListener("change",()=>{ state[k]=c.checked; save(); recalcPayments(); });
+});
+document.querySelectorAll(".paidamt").forEach(inp=>{
+  // Empty → fall back to apartment.json paid_amount / computed amount.
+  inp.addEventListener("change",()=>{ const k="paidamt_"+inp.dataset.date;
+    if(inp.value==="") delete state[k]; else state[k]=inp.value; save(); recalcPayments(); });
 });
 (function(){ const ii=document.getElementById("index-input");
   // `index_override` (contract units, e.g. 144.11) replaces the old `index_cur`, which applied
@@ -1036,7 +1069,7 @@ function renderCompStats(){
 function renderCashFlow(){
   const cfg=DATA.management.cash_flow||{}; ["available_cash_nis","monthly_contribution_nis","contingency_pct","renovation_target_nis"].forEach(k=>{if(state["cash_"+k]==null)state["cash_"+k]=cfg[k]||0;const el=document.getElementById("cash-"+k);el.value=state["cash_"+k];});
   // Same per-payment linkage as the payment board (payIndexInfo).
-  let remaining=0; (DATA.payments||[]).forEach(p=>{if(!payIsPaid(p))remaining+=payIndexInfo(p).eff;});
+  let remaining=0; (DATA.payments||[]).forEach(p=>{remaining+=payIsPaid(p)?payOpenGap(p):payIndexInfo(p).eff;});
   const reno=parseFloat(state.cash_renovation_target_nis)||0,cont=parseFloat(state.cash_contingency_pct)||0,available=parseFloat(state.cash_available_cash_nis)||0,monthly=parseFloat(state.cash_monthly_contribution_nis)||0;
   const required=remaining+reno*(1+cont/100),gap=Math.max(0,required-available);const last=DATA.payments.length?new Date(DATA.payments[DATA.payments.length-1].date):new Date();const months=Math.max(1,Math.ceil((last-new Date())/(1000*60*60*24*30.44)));const projected=available+monthly*months;
   document.getElementById("cash-remaining").textContent=nis(remaining);document.getElementById("cash-required").textContent=nis(required);document.getElementById("cash-gap").textContent=nis(gap);document.getElementById("cash-months").textContent=months;document.getElementById("cash-projected").textContent=nis(projected);document.getElementById("cash-monthly-needed").textContent=nis(gap/months);document.getElementById("cash-status").innerHTML=projected>=required?'<span class="badge badge-ok">ממומן לפי ההנחות</span>':'<span class="badge badge-warn">פער מימון '+nis(required-projected)+'</span>';save();
@@ -1287,8 +1320,11 @@ def main():
         idx = "🔗" if s.get("indexed") else ""
         pay_rows += (
             f'<tr><td>{s["date"]}</td>'
-            f'<td class="num amt-cell" data-base="{s["amount_incl_vat"]}">{shekel(s["amount_incl_vat"])} {idx}</td>'
+            f'<td class="num">{shekel(s["amount_incl_vat"])} {idx}</td>'
             f'<td class="idx-cell" style="font-size:12px;color:var(--muted)">{"—" if not s.get("indexed") else ""}</td>'
+            f'<td class="num amt-cell" data-base="{s["amount_incl_vat"]}"></td>'
+            f'<td><input type="number" step="0.01" class="paidamt" data-date="{s["date"]}" '
+            f'style="width:105px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:3px 6px"></td>'
             f'<td class="paid-cell"></td>'
             f'<td><input type="checkbox" class="paychk" data-date="{s["date"]}" '
             f'data-amt="{s["amount_incl_vat"]}" data-indexed="{1 if s.get("indexed") else 0}" '
@@ -1715,10 +1751,10 @@ def main():
     <h2>💳 לוח תשלומים (חוזה)</h2>
     <div class="next" id="next-payment"></div>
     <div class="card" style="margin-top:10px">
-      <table>
-        <tr><th>תאריך</th><th>סכום (כולל מע"מ)</th><th>מדד / תוספת</th><th>סטטוס</th><th>שולם?</th></tr>
+      <div class="scroll"><table>
+        <tr><th>תאריך</th><th>סכום חוזה (בסיס)</th><th>הצמדה: מדד / תוספת</th><th>סה״כ מחושב</th><th>שולם בפועל</th><th>סטטוס</th><th>שולם?</th></tr>
         {pay_rows}
-      </table>
+      </table></div>
       <div class="sub" style="margin-top:8px">🔗 = צמוד למדד תשומות הבנייה. {pay.get('index_note','')}</div>
       <div class="diyline" style="margin-top:10px">
         <label class="diychk" style="background:#1b2748;border-color:#38bdf8;color:#bae6fd">📊 מדד לתשלומים עתידיים (ריק = אוטומטי)
@@ -1728,8 +1764,9 @@ def main():
       </div>
     </div>
     <div class="foot">
-      <div>שולם עד כה: <b id="paid-total">—</b></div>
-      <div>נותר לשלם (לפי מדד): <b id="remaining-total">—</b></div>
+      <div>שולם בפועל: <b id="paid-total">—</b></div>
+      <div>הפרשי הצמדה פתוחים (על תשלומים ששולמו): <b id="open-linkage-total">—</b></div>
+      <div>נותר לשלם: <b id="remaining-total">—</b> <span class="sub" id="remaining-split"></span></div>
     </div>
   </section>
 
