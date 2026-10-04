@@ -58,8 +58,11 @@ def main():
     # the workflow or wipe the last-good dashboard — deals-*.json is git-ignored, so on a
     # fresh CI checkout there is no market data to rebuild from. When fetch fails we keep
     # the previously committed index.html untouched and exit cleanly.
+    # Construction-inputs index (CBS API) is independent of the market fetch and best-effort:
+    # on failure construction_index.json keeps its last-good series (and the page refreshes live).
+    index_stage = run_stage("index", [sys.executable, "fetch_index.py"])
     fetch_stage = run_stage("fetch", [sys.executable, "fetch_deals.py"])
-    stages = [fetch_stage]
+    stages = [index_stage, fetch_stage]
     fetch_ok = fetch_stage.get("ok")
     if fetch_ok:
         stages.append(run_stage("validate", [sys.executable, "validate_data.py", "--strict"]))

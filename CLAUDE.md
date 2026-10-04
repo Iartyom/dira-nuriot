@@ -32,6 +32,7 @@ python dira-nuriot/build_html.py            # rebuild index.html from the JSON d
 python dira-nuriot/update_all.py            # full pipeline: fetch → validate → snapshot → build
 python dira-nuriot/fetch_deals.py [query]   # fetch public market data (network; default query = נוריות)
 python dira-nuriot/validate_data.py --strict  # schema-validate the JSON (exit 2 on failure)
+python dira-nuriot/fetch_index.py           # CBS construction-inputs index → construction_index.json (payment linkage)
 ```
 
 `dira-nuriot/update.sh [data|agent|html]` is the portable bash entry point (bash + python3

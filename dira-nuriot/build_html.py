@@ -450,31 +450,63 @@ function recompute(){
 }
 
 // ---------- תשלומים ----------
+// Linkage model: each indexed payment uses the index *known* on its due date (CBS publishes
+// month M on the 15th of M+1); future payments use the latest published index (projection) or
+// the manual override. Only `share` (40%, Sale Law amendment 2022) of each payment is linked,
+// and a falling index never reduces the amount below the contract base.
+const IDX = DATA.index || {series:{}};
+function knownIndexMonth(dateStr){
+  const d=new Date(dateStr), months=Object.keys(IDX.series||{}).sort();
+  let hit=null;
+  months.forEach(m=>{ const [y,mo]=m.split("-").map(Number); if(new Date(y,mo,15)<=d) hit=m; });
+  return hit;
+}
+function payIndexInfo(p){
+  // → {eff, extra, label, projected}; amounts unchanged when not indexed or no data.
+  const amt=p.amount_incl_vat;
+  if(!p.indexed) return {eff:amt, extra:0, label:"", projected:false};
+  const series=IDX.series||{}, months=Object.keys(series).sort(), baseV=series[IDX.base_period];
+  if(!baseV||!months.length) return {eff:amt, extra:0, label:"אין נתוני מדד", projected:true};
+  const latest=months[months.length-1];
+  let m=knownIndexMonth(p.date), projected=false;
+  // Due date after the latest published index could have been known → projection.
+  if(!m || (m===latest && new Date(p.date)>=new Date(+latest.slice(0,4), +latest.slice(5,7)+1, 15))) projected=true;
+  if(!m) m=latest;
+  let ratio=series[m]/baseV, idxContract=series[m]*(IDX.chain||1);
+  const ov=parseFloat(state.index_override);
+  if(projected && !isNaN(ov) && ov>0){ ratio=ov/(baseV*(IDX.chain||1)); idxContract=ov; m="ידני"; }
+  const share=IDX.share==null?1:IDX.share;
+  const extra=amt*share*Math.max(0,ratio-1);
+  return {eff:amt+extra, extra, projected,
+          label:(projected?"משוער · ":"")+m+" · "+idxContract.toFixed(2)+" · +"+nis(extra)};
+}
+function payIsPaid(p){ const k="paid_"+p.date; return state[k]===undefined?p.paid:state[k]; }
 function recalcPayments(){
-  const base=DATA.index_base||0;
-  let cur=parseFloat(state.index_cur); if(isNaN(cur)||!base) cur=base;
-  const factor = base ? cur/base : 1;
-  let paid=0, remaining=0, extra=0; let nextEl=null;
+  const byDate={}; (DATA.payments||[]).forEach(p=>byDate[p.date]=p);
+  let paid=0, remaining=0, extra=0; let nextEl=null, nextEff=0;
   document.querySelectorAll(".paychk").forEach(c => {
-    const amt=parseFloat(c.dataset.amt)||0;
-    const indexed = c.dataset.indexed==="1";
-    const eff = indexed ? amt*factor : amt;
-    if(indexed) extra += eff-amt;
-    const cell=c.closest("tr").querySelector(".amt-cell");
-    if(cell) cell.textContent = nis(eff) + (indexed?" 🔗":"");
-    if(c.checked){ paid+=eff; c.closest("tr").querySelector(".paid-cell").innerHTML='<span class="paid-yes">✓ שולם</span>'; }
-    else { remaining+=eff; c.closest("tr").querySelector(".paid-cell").innerHTML='<span class="paid-no">ממתין</span>';
-           if(!nextEl) nextEl=c; }
+    const p=byDate[c.dataset.date]||{date:c.dataset.date,amount_incl_vat:parseFloat(c.dataset.amt)||0,indexed:c.dataset.indexed==="1"};
+    const info=payIndexInfo(p), tr=c.closest("tr");
+    extra+=info.extra;
+    const cell=tr.querySelector(".amt-cell");
+    if(cell) cell.textContent = nis(info.eff) + (p.indexed?" 🔗":"");
+    const ic=tr.querySelector(".idx-cell"); if(ic && p.indexed) ic.textContent=info.label;
+    if(c.checked){ paid+=info.eff; tr.querySelector(".paid-cell").innerHTML='<span class="paid-yes">✓ שולם</span>'; }
+    else { remaining+=info.eff; tr.querySelector(".paid-cell").innerHTML='<span class="paid-no">ממתין</span>';
+           if(!nextEl){ nextEl=c; nextEff=info.eff; } }
   });
   document.getElementById("paid-total").textContent=nis(paid);
   document.getElementById("remaining-total").textContent=nis(remaining);
   const ie=document.getElementById("index-extra"); if(ie) ie.textContent=(extra>0?"+":"")+nis(extra);
+  const months=Object.keys(IDX.series||{}).sort(), latest=months[months.length-1];
+  const is=document.getElementById("index-status");
+  if(is) is.textContent=latest?("מדד אחרון: "+latest+" = "+(IDX.series[latest]*(IDX.chain||1)).toFixed(2)+(IDX.live?" · עודכן חי מהלמ\"ס":" · נכון ל-"+(IDX.fetched||"—"))):"";
   const nb=document.getElementById("next-payment");
   const hnp=document.getElementById("hero-nextpay"), hnps=document.getElementById("hero-nextpay-sub");
-  if(nextEl){ const amt=parseFloat(nextEl.dataset.amt)||0; const eff=nextEl.dataset.indexed==="1"?amt*factor:amt;
+  if(nextEl){
     nb.style.display="block";
-    nb.innerHTML='⏭️ התשלום הבא: <b>'+nextEl.dataset.date+'</b> · '+nis(eff);
-    if(hnp) hnp.textContent=nis(eff); if(hnps) hnps.textContent=nextEl.dataset.date; }
+    nb.innerHTML='⏭️ התשלום הבא: <b>'+nextEl.dataset.date+'</b> · '+nis(nextEff);
+    if(hnp) hnp.textContent=nis(nextEff); if(hnps) hnps.textContent=nextEl.dataset.date; }
   else { nb.style.display="none"; if(hnp) hnp.textContent="הושלם"; if(hnps) hnps.textContent="כל התשלומים שולמו"; }
 }
 document.querySelectorAll(".paychk").forEach(c=>{
@@ -483,8 +515,26 @@ document.querySelectorAll(".paychk").forEach(c=>{
   c.addEventListener("change",()=>{ state[k]=c.checked; save(); recalcPayments(); });
 });
 (function(){ const ii=document.getElementById("index-input");
-  if(ii){ if(state.index_cur!=null) ii.value=state.index_cur;
-    ii.addEventListener("input",()=>{ state.index_cur=ii.value; save(); recalcPayments(); }); } })();
+  // `index_override` (contract units, e.g. 144.11) replaces the old `index_cur`, which applied
+  // to every row; a stale synced value must not silently override the auto index.
+  if(ii){ if(state.index_override!=null) ii.value=state.index_override;
+    ii.addEventListener("input",()=>{ state.index_override=ii.value; save(); recalcPayments(); }); } })();
+// Live refresh: CBS API is CORS-open, so pull the latest months at view time and recalc.
+// Offline / failure → keep the build-time series silently.
+(function(){
+  if(!IDX.base_period || !window.fetch) return;
+  const url="https://api.cbs.gov.il/index/data/price?id="+(IDX.series_id||200010)+"&format=json&download=false&last=6&lang=he";
+  fetch(url).then(r=>r.ok?r.json():null).then(j=>{
+    const rows=j&&j.month&&j.month[0]&&j.month[0].date; if(!rows||!rows.length) return;
+    // Only accept rows on the same CBS base as the stored series: after a CBS rebase the
+    // ratios would be wrong, so we keep the build-time series until fetch_index.py reruns.
+    if(!IDX.series[IDX.base_period] || (IDX.cbs_base && rows[0].currBase.baseDesc!==IDX.cbs_base)) return;
+    rows.forEach(r=>{ if(r.currBase.baseDesc!==rows[0].currBase.baseDesc) return;
+      IDX.series[r.year+"-"+String(r.month).padStart(2,"0")]=r.currBase.value; });
+    // Doesn't call save()/renderCashFlow (which saves) — a view-time refresh must not push cloud state.
+    IDX.live=true; recalcPayments();
+  }).catch(()=>{});
+})();
 
 // ---------- גאנט-רפרנס ----------
 document.querySelectorAll("input.gtask").forEach(c=>{
@@ -985,8 +1035,8 @@ function renderCompStats(){
 // ---------- תחזית תזרים ----------
 function renderCashFlow(){
   const cfg=DATA.management.cash_flow||{}; ["available_cash_nis","monthly_contribution_nis","contingency_pct","renovation_target_nis"].forEach(k=>{if(state["cash_"+k]==null)state["cash_"+k]=cfg[k]||0;const el=document.getElementById("cash-"+k);el.value=state["cash_"+k];});
-  const base=DATA.index_base||0,cur=parseFloat(state.index_cur)||base,factor=base?cur/base:1;
-  let remaining=0; (DATA.payments||[]).forEach(p=>{const paid=state["paid_"+p.date]===undefined?p.paid:state["paid_"+p.date];if(!paid)remaining+=p.amount_incl_vat*(p.indexed?factor:1);});
+  // Same per-payment linkage as the payment board (payIndexInfo).
+  let remaining=0; (DATA.payments||[]).forEach(p=>{if(!payIsPaid(p))remaining+=payIndexInfo(p).eff;});
   const reno=parseFloat(state.cash_renovation_target_nis)||0,cont=parseFloat(state.cash_contingency_pct)||0,available=parseFloat(state.cash_available_cash_nis)||0,monthly=parseFloat(state.cash_monthly_contribution_nis)||0;
   const required=remaining+reno*(1+cont/100),gap=Math.max(0,required-available);const last=DATA.payments.length?new Date(DATA.payments[DATA.payments.length-1].date):new Date();const months=Math.max(1,Math.ceil((last-new Date())/(1000*60*60*24*30.44)));const projected=available+monthly*months;
   document.getElementById("cash-remaining").textContent=nis(remaining);document.getElementById("cash-required").textContent=nis(required);document.getElementById("cash-gap").textContent=nis(gap);document.getElementById("cash-months").textContent=months;document.getElementById("cash-projected").textContent=nis(projected);document.getElementById("cash-monthly-needed").textContent=nis(gap/months);document.getElementById("cash-status").innerHTML=projected>=required?'<span class="badge badge-ok">ממומן לפי ההנחות</span>':'<span class="badge badge-warn">פער מימון '+nis(required-projected)+'</span>';save();
@@ -1128,6 +1178,8 @@ def main():
     deal_files = sorted(glob.glob(os.path.join(HERE, "updates", "deals-*.json")))
     market = load_json(deal_files[-1], {}) if deal_files else {}
     market = market or {}
+    # Construction-inputs index series (fetch_index.py); the dashboard also refreshes it live from CBS.
+    cindex = load_json(os.path.join(HERE, "construction_index.json"), {}) or {}
     today = datetime.date.today().isoformat()
 
     p = apt.get("project", {})
@@ -1236,6 +1288,7 @@ def main():
         pay_rows += (
             f'<tr><td>{s["date"]}</td>'
             f'<td class="num amt-cell" data-base="{s["amount_incl_vat"]}">{shekel(s["amount_incl_vat"])} {idx}</td>'
+            f'<td class="idx-cell" style="font-size:12px;color:var(--muted)">{"—" if not s.get("indexed") else ""}</td>'
             f'<td class="paid-cell"></td>'
             f'<td><input type="checkbox" class="paychk" data-date="{s["date"]}" '
             f'data-amt="{s["amount_incl_vat"]}" data-indexed="{1 if s.get("indexed") else 0}" '
@@ -1333,6 +1386,13 @@ def main():
                "pros": {pr["key"]: pr["he"] for pr in reno.get("professionals", [])},
                "kitchen_credit": reno.get("kitchen_credit_nis", 0),
                "index_base": pay.get("index_base", 0),
+               "index": {"base_period": pay.get("index_base_period", ""),
+                         "chain": pay.get("index_chain_factor", 1),
+                         "share": pay.get("linked_share", 1),
+                         "series": cindex.get("series", {}),
+                         "fetched": cindex.get("fetched", ""),
+                         "cbs_base": cindex.get("cbs_base", ""),
+                         "series_id": cindex.get("series_id", 200010)},
                "shopping_seed": [o["he"] for o in reno.get("options", []) if o.get("diy")],
                "pros_seed": [pr["he"] for pr in reno.get("professionals", [])],
                "value_seed": apt.get("valuation_history") or [
@@ -1656,14 +1716,15 @@ def main():
     <div class="next" id="next-payment"></div>
     <div class="card" style="margin-top:10px">
       <table>
-        <tr><th>תאריך</th><th>סכום (כולל מע"מ)</th><th>סטטוס</th><th>שולם?</th></tr>
+        <tr><th>תאריך</th><th>סכום (כולל מע"מ)</th><th>מדד / תוספת</th><th>סטטוס</th><th>שולם?</th></tr>
         {pay_rows}
       </table>
       <div class="sub" style="margin-top:8px">🔗 = צמוד למדד תשומות הבנייה. {pay.get('index_note','')}</div>
       <div class="diyline" style="margin-top:10px">
-        <label class="diychk" style="background:#1b2748;border-color:#38bdf8;color:#bae6fd">📊 מדד תשומות נוכחי
-          <input type="number" step="0.01" id="index-input" style="width:90px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:3px 6px" placeholder="{pay.get('index_base','')}"></label>
-        <span class="prodprice" style="color:#bae6fd">מדד בסיס: {pay.get('index_base','')} · תוספת מדד על הצמודים: <b id="index-extra">0 ₪</b></span>
+        <label class="diychk" style="background:#1b2748;border-color:#38bdf8;color:#bae6fd">📊 מדד לתשלומים עתידיים (ריק = אוטומטי)
+          <input type="number" step="0.0001" id="index-input" style="width:100px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:3px 6px" placeholder="{pay.get('index_base','')}"></label>
+        <span class="prodprice" style="color:#bae6fd">מדד בסיס: {pay.get('index_base','')} · צמוד: {round(pay.get('linked_share', 1) * 100)}% מכל תשלום · תוספת מדד כוללת: <b id="index-extra">0 ₪</b></span>
+        <span class="prodprice" id="index-status" style="color:var(--muted)"></span>
       </div>
     </div>
     <div class="foot">
