@@ -2,7 +2,7 @@
   "_comment": "נשאב אוטומטית מ-API של הלמ\"ס (fetch_index.py). ערכים בבסיס הלמ\"ס הנוכחי — הלוח משתמש ביחסים בלבד.",
   "series_id": 200010,
   "cbs_base": "2025 יולי",
-  "fetched": "2026-10-05",
+  "fetched": "2026-10-06",
   "source": "https://api.cbs.gov.il/index/data/price?id=200010",
   "series": {
     "2025-10": 100.5,
