@@ -1978,7 +1978,7 @@ def main():
     <h2>🔁 פלופ — מסלולי שדרוג עתידיים</h2>
     <div class="sub">{up.get('preferences','')}</div>
     <div class="warn">💡 {up.get('current_equity_note','')}</div>
-    <div class="stale stale-warn">🔒 מימוש הרווח והשדרוג מותנה ב<b>תום נעילת המכירה: 18 חודשים אחרי קבלת המפתח → חלון מכירה חופשי מ-{restr.get('sale_allowed_from','~2030')}</b> (ראו "מגבלות מחיר למשתכן"). מומלץ לאמת ניסוח/קנס בחוזה.</div>
+    <div class="stale stale-warn">🔒 החוזה מתיר מכירה מ-{restr.get('contract_sale_allowed_from','2028')} (7 שנים מהזכייה), אבל <b>מכירה ללא מס שבח רק אחרי 18 חודשים מטופס 4 → מ-{restr.get('sale_allowed_from','~2030')}</b> (ראו "מגבלות מחיר למשתכן").</div>
     {tiers_html}
     <div class="src">{srcs(up.get('sources'))}</div>
   </section>
