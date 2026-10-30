@@ -1,4 +1,4 @@
-"""Adapter registry and aggregator for external sources (madlan, yad2).
+"""Adapter registry and aggregator for external sources (madlan).
 Each adapter module should expose a function `fetch(query)` that returns a list of deal-like dicts
 or raises/returns an empty list on failure. Adapter implementations should save raw responses
 into updates/ for provenance.

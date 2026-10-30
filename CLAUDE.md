@@ -44,12 +44,11 @@ stdlib only). On this Windows box, invoke the Python scripts directly instead.
 `build_html.py` embeds them into `index.html` (inline CSS/JS) that persists user edits to
 `localStorage`. Do not hand-edit `index.html` — regenerate it from the data.
 
-The core dashboard runs **offline**, but three opt-in features call external services at view time
-(keys embedded in `apartment.json → project`): the room-ideas **image gallery** (Pexels, Openverse
-fallback), and **cloud sync + shared board** (Supabase — every `save()` upserts the whole `state`
-to one row; anyone with the link reads/writes it). Credentials embedded are public-safe by design
-(Supabase publishable key under RLS; free Pexels key — exposure is quota only). Manual
-export/import JSON backup remains for offline use.
+The core dashboard runs **offline**; the only view-time external calls are the room-ideas **image
+gallery** (Pexels key in `apartment.json → project`, Openverse fallback; free key — exposure is quota
+only) and the live CBS index refresh. Edits live in the viewer's `localStorage` only — Supabase cloud
+sync was removed (the project stopped resolving, so saves were failing silently). Manual
+export/import JSON backup is the way to move data between devices.
 
 - `apartment.json` — fixed facts + `valuation` + `valuation_history` + selling restrictions + to-dos. Source of truth for value.
 - `renovation.json` — renovation budget (2026 ranges) + Gantt schedule.
@@ -70,7 +69,7 @@ export/import JSON backup remains for offline use.
   ID, with hardcoded verified location seeds (`KNOWN_LOCATIONS`) as a TLS-failure fallback.
 - `adapters/` auto-discovers any module exposing `fetch(query)`; adapter failures are caught and
   never abort the pipeline. `madlan.py` parses SSR-hydrated JSON (market indicator, kept separate
-  from government data); `yad2.py` is intentionally not wired in (anti-bot).
+  from government data); Yad2 is not scraped (anti-bot; the adapter was removed).
 - Raw responses and snapshots are written under `updates/` for provenance and are **git-ignored**
   (only `index.html`, dated `updates/*.md`, and the JSON data are committed).
 

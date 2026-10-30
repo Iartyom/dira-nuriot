@@ -3,9 +3,7 @@ from importlib.machinery import SourceFileLoader
 
 HERE = os.path.dirname(__file__)
 madlan_path = os.path.abspath(os.path.join(HERE, '..', 'dira-nuriot', 'adapters', 'madlan.py'))
-yad2_path = os.path.abspath(os.path.join(HERE, '..', 'dira-nuriot', 'adapters', 'yad2.py'))
 madlan = SourceFileLoader('madlan', madlan_path).load_module()
-yad2 = SourceFileLoader('yad2', yad2_path).load_module()
 
 
 def test_madlan_parse_structured_summary():
@@ -54,12 +52,3 @@ def test_madlan_comparison_area_validation():
     result = madlan.parse_market_summary(html, expected_area='נרקיסים')
     assert result['prices_by_rooms']['6']['new_build_price_nis'] == 4003333
     assert result['comparison_area'] == 'נרקיסים'
-
-
-def test_yad2_parse_fixture():
-    with open(os.path.join(HERE, 'fixtures', 'yad2_sample.html'), encoding='utf-8') as f:
-        html = f.read()
-    items = yad2._parse_html_for_comps(html)
-    assert isinstance(items, list)
-    assert items and items[0].get('_area_sqm') == 145
-    assert '3100000' in items[0].get('DEALAMOUNT')

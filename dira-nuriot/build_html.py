@@ -327,7 +327,7 @@ JS = r"""
 const LS = "dira-nuriot-state-v3";
 const LEGACY_LS = "dira-nuriot-state-v2";
 const state = JSON.parse(localStorage.getItem(LS) || localStorage.getItem(LEGACY_LS) || "{}");
-function save(){ localStorage.setItem(LS, JSON.stringify(state)); try{ if(window.__cloudPush) window.__cloudPush(); }catch(e){} }
+function save(){ localStorage.setItem(LS, JSON.stringify(state)); }
 function nis(n){ return Math.round(n).toLocaleString("he-IL") + " ₪"; }
 function esc(s){ return (s==null?"":(""+s)).replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
 function sizeTag(a){ if(!a) return ""; if(a<6) return '<span class="szt szt-s">קטן</span>'; if(a<=12) return '<span class="szt szt-m">בינוני</span>'; return '<span class="szt szt-l">גדול</span>'; }
@@ -565,7 +565,7 @@ document.querySelectorAll(".paidamt").forEach(inp=>{
     if(!IDX.series[IDX.base_period] || (IDX.cbs_base && rows[0].currBase.baseDesc!==IDX.cbs_base)) return;
     rows.forEach(r=>{ if(r.currBase.baseDesc!==rows[0].currBase.baseDesc) return;
       IDX.series[r.year+"-"+String(r.month).padStart(2,"0")]=r.currBase.value; });
-    // Doesn't call save()/renderCashFlow (which saves) — a view-time refresh must not push cloud state.
+    // Doesn't call save()/renderCashFlow (which saves) — a view-time refresh must not write state.
     IDX.live=true; recalcPayments();
   }).catch(()=>{});
 })();
@@ -651,48 +651,6 @@ function saveRows(key, table){
   });
   state[key]=rows; save();
 }
-function addSupplierRow(table, d){
-  d=d||{};
-  const tr=document.createElement("tr"); tr.className="datarow";
-  tr.innerHTML='<td><input class="cell" data-f="name" value="'+esc(d.name)+'"></td>'
-    +'<td><input class="cell" data-f="trade" value="'+esc(d.trade)+'" list="trades"></td>'
-    +'<td><input class="cell" data-f="phone" value="'+esc(d.phone)+'"></td>'
-    +'<td><input class="cell" data-f="quote" type="number" value="'+esc(d.quote)+'"></td>'
-    +'<td><input class="cell" data-f="status" value="'+esc(d.status)+'" placeholder="הצעה/נבחר"></td>'
-    +'<td><button class="delbtn">✕</button></td>';
-  table.appendChild(tr);
-  tr.querySelectorAll("input").forEach(i=>i.addEventListener("input",()=>saveRows("suppliers",table)));
-  tr.querySelector(".delbtn").addEventListener("click",()=>{ tr.remove(); saveRows("suppliers",table); });
-}
-(function(){ const t=document.getElementById("suppliers-table");
-  let dl=document.createElement("datalist"); dl.id="trades";
-  (DATA.pros_seed||[]).forEach(p=>{ const o=document.createElement("option"); o.value=p; dl.appendChild(o); });
-  document.body.appendChild(dl);
-  const saved=state.suppliers||[];
-  if(saved.length) saved.forEach(d=>addSupplierRow(t,d)); else addSupplierRow(t,{});
-  document.getElementById("add-supplier").addEventListener("click",()=>addSupplierRow(t,{}));
-})();
-
-// ---------- רשימת קניות ----------
-function addShopRow(table, d){
-  d=d||{};
-  const tr=document.createElement("tr"); tr.className="datarow";
-  tr.innerHTML='<td><input class="cell" data-f="item" value="'+esc(d.item)+'"></td>'
-    +'<td><input class="cell" data-f="link" value="'+esc(d.link)+'" placeholder="https://"></td>'
-    +'<td><input class="cell" data-f="price" type="number" value="'+esc(d.price)+'"></td>'
-    +'<td style="text-align:center"><input type="checkbox" data-f="ordered" '+(d.ordered?"checked":"")+'></td>'
-    +'<td><button class="delbtn">✕</button></td>';
-  table.appendChild(tr);
-  tr.querySelectorAll("input").forEach(i=>i.addEventListener(i.type==="checkbox"?"change":"input",()=>saveRows("shop",table)));
-  tr.querySelector(".delbtn").addEventListener("click",()=>{ tr.remove(); saveRows("shop",table); });
-}
-(function(){ const t=document.getElementById("shop-table");
-  const saved=state.shop;
-  if(saved && saved.length) saved.forEach(d=>addShopRow(t,d));
-  else (DATA.shopping_seed||[]).forEach(it=>addShopRow(t,{item:it}));
-  document.getElementById("add-shop").addEventListener("click",()=>addShopRow(t,{}));
-})();
-
 // ---------- גלריית השראה חיה (Openverse) + שמירה לפי חדר ----------
 // תמונות Creative-Commons (API מפתח-חינם, CORS). 🔖 שומר מקומית (נכנס לגיבוי).
 // הגלריה דורשת אינטרנט; שאר הדף אופליין. אין הטמעת תמונות מוגנות-זכויות בריפו הפומבי —
@@ -904,73 +862,6 @@ function addShopRow(table, d){
   }
   document.querySelectorAll(".cc-results").forEach(box =>
     box.addEventListener("scroll", () => maybeMore(box), {passive:true}));
-})();
-
-// ---------- סנכרון אוטומטי (Supabase) — לוח משותף אוטומטי לכל מי שיש לו את הקישור ----------
-// שורה אחת (row=main) מחזיקה את כל ה-state כ-jsonb. שינוי → העלאה (debounced); טעינה/poll → הורדה.
-// כתיבה פתוחה (לפי בחירת המשתמש): כל מי שיש לו את הקישור יכול לערוך. pexels_key לא מסונכרן.
-(function(){
-  const cfg = (DATA.supabase||{}); if(!cfg.url || !cfg.key) return;
-  const base = cfg.url.replace(/\/+$/,"") + "/rest/v1/" + (cfg.table||"board");
-  const ROW = cfg.row || "main", MK = "dira-nuriot-cloud-at";
-  const H = { apikey: cfg.key, "Authorization":"Bearer "+cfg.key, "Content-Type":"application/json" };
-  let pushTimer = null, pushInFlight = false, lastLocalChange = 0;
-  const stripped = () => { const s = Object.assign({}, state); delete s.pexels_key; return s; };
-  function setCloud(msg, ok){ const el = document.getElementById("cloud-status"); if(!el) return;
-    el.textContent = "☁️ " + msg;
-    el.style.color = ok===false ? "var(--rose,#fb7185)" : (ok ? "var(--green,#22c55e)" : "var(--muted)"); }
-  async function push(){
-    pushInFlight = true;
-    try{
-      const at = new Date().toISOString();
-      const r = await fetch(base, { method:"POST",
-        headers: Object.assign({Prefer:"resolution=merge-duplicates,return=representation"}, H),
-        body: JSON.stringify([{ id: ROW, data: stripped(), updated_at: at }]) });
-      if(r.ok){
-        // קריטי: לשמור את חותמת-הזמן כפי שהשרת מחזיר (פורמט +00:00 שונה מ-toISOString "Z")
-        // אחרת כל pull חושב שהענן "חדש יותר" → רענון מיותר בכל שמירה.
-        let serverAt = at;
-        try{ const rows = await r.json(); if(rows && rows[0] && rows[0].updated_at) serverAt = rows[0].updated_at; }catch(e){}
-        localStorage.setItem(MK, serverAt);
-        setCloud("נשמר בענן ✓ " + new Date().toLocaleTimeString("he-IL"), true);
-      } else setCloud("שגיאת שמירה (" + r.status + ")", false);
-    }catch(e){ setCloud("אין חיבור לענן", false); }
-    finally { pushInFlight = false; }
-  }
-  window.__cloudPush = () => { lastLocalChange = Date.now(); clearTimeout(pushTimer);
-    pushTimer = setTimeout(() => { pushTimer = null; push(); }, 1500); };
-  // מחיל עדכון מהענן — רק בפעולת משתמש מפורשת (לחיצה על "רענן"), אף פעם לא אוטומטית באמצע גלישה
-  function applyRemote(data, at){
-    if(state.pexels_key) data.pexels_key = state.pexels_key;
-    localStorage.setItem(LS, JSON.stringify(data)); localStorage.setItem(MK, at);
-    location.reload();
-  }
-  function showUpdate(data, at){
-    const el = document.getElementById("cloud-status"); if(!el) return;
-    el.innerHTML = '🔄 עדכון מהענן זמין — <u>רענן</u>';
-    el.style.color = "var(--gold,#f5c451)"; el.style.cursor = "pointer";
-    el.onclick = () => applyRemote(data, at);
-  }
-  // firstLoad=true בטעינת הדף: אם זה דפדפן חדש (לא סונכרן) נטען אוטומטית; אחרת באנר בלבד.
-  async function pull(firstLoad){
-    // לעולם לא מרעננים כשיש שינוי מקומי בהמתנה/בהעלאה — מונע איבוד שמירה וקפיצה
-    if(pushTimer || pushInFlight || Date.now() - lastLocalChange < 4000) return;
-    try{
-      const r = await fetch(base + "?id=eq." + encodeURIComponent(ROW) + "&select=data,updated_at", {headers:H});
-      if(!r.ok) return;
-      const rows = await r.json();
-      if(!rows.length){ push(); return; }               // אין שורה → זרע ממצב מקומי
-      const at = rows[0].updated_at, data = rows[0].data;
-      if(!at || at === localStorage.getItem(MK)) return; // אין שינוי אמיתי
-      // רק בטעינה ראשונה של דפדפן שמעולם לא סונכרן — טען אוטומטית (אין גלישה לאבד)
-      if(firstLoad && !localStorage.getItem(MK)) applyRemote(data, at);
-      else showUpdate(data, at);                          // אחרת: באנר בלבד, המשתמש מרענן מתי שנוח
-    }catch(e){}
-  }
-  setCloud("מסונכרן", true);
-  pull(true);
-  // poll עדין — אף פעם לא מרענן לבד; רק מציג "עדכון זמין" אם השתנה במכשיר אחר
-  setInterval(() => { if(Date.now() - lastLocalChange > 8000) pull(false); }, 25000);
 })();
 
 // ---------- מעקב שווי ----------
@@ -1256,11 +1147,11 @@ const ca=document.getElementById("collapse-all"); if(ca) ca.addEventListener("cl
 // ---------- טאבים ראשיים (6 תחומים) ----------
 // כל סקשן משויך לתחום לפי כותרת; הסקשנים מועברים לפאנל התחום בסדר הרצוי.
 const DOMAINS=[
-  {key:"overview", label:"סקירה", match:["#value-summary","דברים לביצוע","משימות לביצוע"]},
+  {key:"overview", label:"סקירה", match:["#value-summary","משימות לביצוע"]},
   {key:"finance", label:"כספים", match:["נתוני שוק","לוח תשלומים","תחזית תזרים","הערכת שווי","מכירה ושדרוג"]},
-  {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","רעיונות עיצוב לפי חדר","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה","לו\"ז ביצוע","מדריך אנשי מקצוע","ספקים והצעות","רשימת קניות"]},
+  {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","רעיונות עיצוב לפי חדר","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה","מדריך אנשי מקצוע"]},
   {key:"handover", label:"מסירה", match:["מסירה ובדק בית"]},
-  {key:"property", label:"נכס וסביבה", match:["מיקום, תוכניות","מידות חדרים","סקירת שכונה","פלופ","מגבלות מחיר"]},
+  {key:"property", label:"נכס וסביבה", match:["מיקום, תוכניות","מידות חדרים","סקירת שכונה","מגבלות מחיר"]},
   {key:"system", label:"מערכת", match:["מצב מערכת"]},
 ];
 (function(){
@@ -1501,8 +1392,6 @@ def main():
     # ----- דברים לביצוע (נגזר מ-constraints + valuation) -----
     actions = [
         ("spec", "לקרוא תוכנית מכר + מפרט ולסמן מה כלול בגימור", "🔴 דחוף"),
-        ("wall", "לבדוק בתוכנית אם הקיר להזזה מחיצה / נושא / ממ\"ד", "🔴 דחוף"),
-        ("next_pay", f"תשלום הבא 07/06/26 (~{shekel(242568.70)})", "🔴 דחוף"),
         ("kitchen_quote", "לקבל 2–3 הצעות מחיר למטבח (אספקה+התקנה)", "🟡 בינוני"),
         ("pros_quotes", "לאתר אנשי מקצוע ולקבל הצעות (אינסטלטור/חשמלאי/רצף/גבסן/צבעי)", "🟡 בינוני"),
         ("budget", "לקבע תקציב שיפוץ סופי לפי האפשרויות שנבחרו", "🟡 בינוני"),
@@ -1575,8 +1464,6 @@ def main():
                          "fetched": cindex.get("fetched", ""),
                          "cbs_base": cindex.get("cbs_base", ""),
                          "series_id": cindex.get("series_id", 200010)},
-               "shopping_seed": [o["he"] for o in reno.get("options", []) if o.get("diy")],
-               "pros_seed": [pr["he"] for pr in reno.get("professionals", [])],
                "value_seed": apt.get("valuation_history") or [
                    {"date": (pur.get("contract_signed", "") or "")[:7], "value": paid_price, "note": "מחיר רכישה"},
                    {"date": val.get("last_updated", ""), "value": est, "note": "הערכת שוק"},
@@ -1599,8 +1486,6 @@ def main():
                        for stage in status.get("stages", [])
                    ],
                },
-               "supabase": {"url": p.get("supabase_url", ""), "key": p.get("supabase_key", ""),
-                            "table": p.get("supabase_table", "board"), "row": p.get("supabase_row", "main")},
                "pexels_key": p.get("pexels_key", ""),
                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat()}
 
@@ -1613,6 +1498,8 @@ def main():
   <section>
     <h2>🚀 תוכנית ביצוע מהירה + מה לפני מפתח</h2>
     <div class="warn" style="background:#06281f;border-color:#22c55e;color:#bbf7d0">⚡ {reno.get('shortest_path','')}</div>
+    <h3 style="margin-top:12px">🗓️ לו"ז לפי שבועות</h3>
+    {gantt_html}
     <div class="card" style="margin-top:10px">
       <h3>✅ משימות שאפשר להשלים לפני קבלת המפתח</h3>
       <ul class="flat" data-elist="prep">{prep_html}</ul>
@@ -1622,17 +1509,15 @@ def main():
       </div>
     </div>
   </section>"""
-    action_section = f"""
-  <section>
-    <h2>📋 דברים לביצוע</h2>
-    <div class="card">
+    action_card = f"""
+    <div class="card" style="margin-top:12px">
+      <h3>📋 כללי (לא שיפוץ)</h3>
       <ul class="flat" data-elist="action">{action_html}</ul>
       <div class="add-row">
         <input class="cell elist-input" data-elist="action" placeholder="הוסיפו פריט משלכם…">
         <button class="addbtn elist-add" data-elist="action">+ הוסף</button>
       </div>
-    </div>
-  </section>"""
+    </div>"""
     restr_section = f"""
   <section>
     <h2>⚖️ מגבלות מחיר למשתכן</h2>
@@ -1827,9 +1712,8 @@ def main():
     <button class="addbtn" id="collapse-all" style="background:var(--card2);color:var(--ink)">⊖ כווץ הכל</button>
     <button class="addbtn" id="export-state" style="background:var(--green);color:#052e1a">⬇ גיבוי נתונים</button>
     <label class="addbtn filebtn" style="background:var(--card2);color:var(--ink)">⬆ שחזור גיבוי<input type="file" id="import-state" accept="application/json"></label>
-    <span id="cloud-status" class="note" style="align-self:center;margin-inline-start:auto"></span>
   </div>
-  <div class="toast" id="backup-msg">עריכות נשמרות מקומית. מומלץ לייצא גיבוי לאחר שינוי משמעותי.</div>
+  <div class="toast" id="backup-msg">עריכות נשמרות בדפדפן הזה בלבד (לא מסונכרן בין מכשירים). ייצאו גיבוי אחרי כל שינוי משמעותי.</div>
 {documents_section}
 
   <section>
@@ -2005,6 +1889,12 @@ def main():
       <div class="note">{mg_up.get('_rate_note', '')} {mg_up.get('_ltv_note', '')} {mg_up.get('_purchase_tax_note', '')}</div>
       <div class="src">{srcs(mg_up.get('sources'))}</div>
     </div>
+    <div class="card" style="margin-top:12px">
+      <h3>🔁 לאן משדרגים — מדרגות</h3>
+      <div class="sub">{up.get('preferences','')}</div>
+      {tiers_html}
+      <div class="src">{srcs(up.get('sources'))}</div>
+    </div>
   </section>
 
   <section>
@@ -2066,6 +1956,7 @@ def main():
       <div class="progress"><i id="task-bar"></i></div>
     </div>
     <div class="card"><ul class="tasks" id="task-list"></ul></div>
+{action_card}
   </section>
 
   <section>
@@ -2075,11 +1966,6 @@ def main():
   </section>
 
   {shortest_section}
-
-  <section>
-    <h2>🗓️ לו"ז ביצוע מפורט (רפרנס — מניח scope מלא, 5 שבועות)</h2>
-    {gantt_html}
-  </section>
 
   <section>
     <h2>👷 מדריך אנשי מקצוע</h2>
@@ -2116,28 +2002,6 @@ def main():
   </section>
 
   <section>
-    <h2>📇 ספקים והצעות מחיר</h2>
-    <div class="sub">הוסף בעלי מקצוע/ספקים, טלפון, הצעת מחיר וסטטוס. נשמר בדפדפן.</div>
-    <div class="card" style="margin-top:10px">
-      <table id="suppliers-table">
-        <tr><th>שם</th><th>תחום</th><th>טלפון</th><th>הצעה (₪)</th><th>סטטוס</th><th></th></tr>
-      </table>
-      <button class="addbtn" id="add-supplier">+ הוסף ספק</button>
-    </div>
-  </section>
-
-  <section>
-    <h2>🛒 רשימת קניות / Wishlist עלי אקספרס</h2>
-    <div class="sub">מוצרי DIY לקנייה: פריט, לינק, מחיר, והאם הוזמן. נשמר בדפדפן.</div>
-    <div class="card" style="margin-top:10px">
-      <table id="shop-table">
-        <tr><th>פריט</th><th>לינק</th><th>מחיר (₪)</th><th>הוזמן?</th><th></th></tr>
-      </table>
-      <button class="addbtn" id="add-shop">+ הוסף פריט</button>
-    </div>
-  </section>
-
-  <section>
     <h2>🏘️ סקירת שכונה — נוריות, ראשון לציון</h2>
     <div class="card nb">
       <p style="margin-top:0">{nb.get('summary','')}</p>
@@ -2152,15 +2016,6 @@ def main():
     </div>
   </section>
 
-  <section>
-    <h2>🔁 פלופ — מסלולי שדרוג עתידיים</h2>
-    <div class="sub">{up.get('preferences','')}</div>
-    <div class="warn">💡 {up.get('current_equity_note','')}</div>
-    <div class="stale stale-warn">🔒 החוזה מתיר מכירה מ-{restr.get('contract_sale_allowed_from','2028')} (7 שנים מהזכייה), אבל <b>מכירה ללא מס שבח רק אחרי 18 חודשים מטופס 4 → מ-{restr.get('sale_allowed_from','~2030')}</b> (ראו "מגבלות מחיר למשתכן").</div>
-    {tiers_html}
-    <div class="src">{srcs(up.get('sources'))}</div>
-  </section>
-{action_section}
 {restr_section}
 
   <footer>עודכן {today} · index.html self-contained · עריכות מקומיות עם גיבוי/שחזור · מקור-אמת: apartment.json + renovation.json + management.json</footer>
