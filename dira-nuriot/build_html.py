@@ -536,6 +536,7 @@ function recalcPayments(){
       (openGap?' <span style="font-size:13px;color:var(--gold)">(+ עד '+nis(openGap)+' הצמדה פתוחה מתשלומים קודמים, אם תיגבה)</span>':'');
     if(hnp) hnp.textContent=nis(nextEff); if(hnps) hnps.textContent=nextEl.dataset.date; }
   else { nb.style.display="none"; if(hnp) hnp.textContent="הושלם"; if(hnps) hnps.textContent="כל התשלומים שולמו"; }
+  if(window.renderSale) window.renderSale();
 }
 document.querySelectorAll(".paychk").forEach(c=>{
   const k="paid_"+c.dataset.date;
@@ -1011,7 +1012,11 @@ function addValueRow(table,d){ d=d||{};
 }
 (function(){ const t=document.getElementById("value-table");
   const saved=state.valuations;
-  if(saved && saved.length) saved.forEach(d=>addValueRow(t,d));
+  // New dated research rows (valuation_history) are merged into a saved table instead of being hidden by it.
+  if(saved && saved.length){ const have=new Set(saved.map(r=>r.date));
+    (DATA.value_seed||[]).forEach(r=>{ if(!have.has(r.date)) saved.push(r); });
+    saved.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    saved.forEach(d=>addValueRow(t,d)); }
   else (DATA.value_seed||[]).forEach(d=>addValueRow(t,d));
   document.getElementById("add-value").addEventListener("click",()=>{addValueRow(t,{});});
   renderValueChart();
@@ -1063,7 +1068,17 @@ function renderCompStats(){
   document.getElementById('comp-price-avg').textContent=priceAvg?nis(priceAvg):"—";
   document.getElementById('comp-avg').textContent=ppsqmAvg?nis(ppsqmAvg)+"/מ״ר":"—";
 }
-(function(){const t=document.getElementById("comparables-table"),seed=state.comparables||DATA.management.comparables||[];seed.forEach(d=>addCompRow(t,d));document.getElementById("add-comp").addEventListener("click",()=>addCompRow(t,{}));renderValuationModel();renderCompStats();})();
+(function(){const t=document.getElementById("comparables-table");
+  // seed_version bump (agent refresh) → research seeds replace saved base/adjustments and seeded comps;
+  // rows the user added (address not in the seeds) are kept. Edits after this persist until the next bump.
+  const vcfg=DATA.management.valuation_model||{}, seeds=DATA.management.comparables||[];
+  if(vcfg.seed_version && state.valuation_seed!==vcfg.seed_version){
+    delete state.valuation_base;
+    Object.keys(state).forEach(k=>{ if(k.indexOf("valuation_adj_")===0) delete state[k]; });
+    if(state.comparables){ const seeded=new Set(seeds.map(r=>r.address));
+      state.comparables=seeds.concat(state.comparables.filter(r=>!seeded.has(r.address))); }
+    state.valuation_seed=vcfg.seed_version; save(); }
+  const seed=state.comparables||seeds;seed.forEach(d=>addCompRow(t,d));document.getElementById("add-comp").addEventListener("click",()=>addCompRow(t,{}));renderValuationModel();renderCompStats();})();
 
 // ---------- תחזית תזרים ----------
 function renderCashFlow(){
@@ -1108,6 +1123,116 @@ function addRoomRow(table,d){ d=d||{};
   document.getElementById("add-room").addEventListener("click",()=>{addRoomRow(t,{});});
 })();
 
+
+// ---------- מכירה ושדרוג: כמה נשאר ביד + הדירה הבאה ----------
+// Estimates, not tax advice. Inputs are state keys ("sm_"/"uf_") seeded from management.json;
+// cost basis = every contract payment incl. computed linkage (payIndexInfo), so it tracks the CBS index.
+(function(){
+  const SM=DATA.management.sale_model||{}, UF=DATA.management.upgrade_finance||{}, CTX=DATA.sale_ctx||{};
+  const smHost=document.getElementById("sm-inputs"), ufHost=document.getElementById("uf-inputs");
+  if(!smHost||!ufHost) return;
+  const SM_FIELDS=[["sale_price_nis","מחיר מכירה (במחירי היום) ₪",CTX.est],["appreciation_pct_per_year","עליית ערך שנתית %",SM.appreciation_pct_per_year],
+    ["form4_month_est","טופס 4 (חודש)",SM.form4_month_est,"month"],["broker_pct","תיווך % (+מע\"מ)",SM.broker_pct],["lawyer_pct","עו\"ד % (+מע\"מ)",SM.lawyer_pct],
+    ["other_costs_nis","הוצאות נוספות ₪",SM.other_costs_nis],["improvements_nis","השבחות מתועדות ₪ (ניכוי)",SM.improvements_nis],
+    ["inflation_pct_per_year","אינפלציה שנתית %",SM.inflation_pct_per_year],["cgt_rate_pct","מס שבח %",SM.cgt_rate_pct],["mortgage_balance_nis","יתרת משכנתא לסילוק ₪",SM.mortgage_balance_nis]];
+  const UF_FIELDS=[["target_price_nis","מחיר הדירה הבאה ₪",UF.target_price_nis],["extra_savings_nis","חסכונות נוספים ₪",UF.extra_savings_nis],
+    ["mortgage_rate_pct","ריבית משכנתא %",UF.mortgage_rate_pct],["mortgage_years","תקופה (שנים)",UF.mortgage_years],
+    ["monthly_net_income_nis","הכנסה נטו חודשית (משק בית) ₪",UF.monthly_net_income_nis],["bridge_months","חודשי גישור",UF.bridge_months],["bridge_rate_pct","ריבית גישור %",UF.bridge_rate_pct]];
+  const inputs={};
+  function build(host,fields,prefix){ fields.forEach(([k,label,def,type])=>{ const key=prefix+k;
+    const l=document.createElement("label"); l.textContent=label; const i=document.createElement("input");
+    i.className="cell"; i.type=type||"number"; if(!type) i.step="any";
+    i.value=state[key]!=null&&state[key]!==""?state[key]:(def!=null?def:"");
+    // Only user input is saved, so refreshed seeds (e.g. a new valuation) still flow into untouched fields.
+    i.addEventListener("input",()=>{ state[key]=i.value; save(); renderSale(); });
+    inputs[key]=i; l.appendChild(i); host.appendChild(l); }); }
+  build(smHost,SM_FIELDS,"sm_"); build(ufHost,UF_FIELDS,"uf_");
+  const num=k=>parseFloat(inputs[k].value)||0;
+  const ym=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+  const monthsBetween=(a,b)=>(b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth());
+  function addMonths(s,n){ const p=String(s||"").split("-").map(Number); return new Date(p[0]||2028,(p[1]||9)-1+n,1); }
+  const vat=1+(parseFloat(SM.vat_pct)||18)/100;
+  function scenario(saleDate,taxed){
+    const yrs=Math.max(0,monthsBetween(new Date(),saleDate)/12);
+    const price=num("sm_sale_price_nis")*Math.pow(1+num("sm_appreciation_pct_per_year")/100,yrs);
+    const broker=price*num("sm_broker_pct")/100*vat, lawyer=price*num("sm_lawyer_pct")/100*vat, other=num("sm_other_costs_nis");
+    const infl=num("sm_inflation_pct_per_year")/100; let cost=0, inflAdj=0;
+    // Each payment is indexed from its own date: only the real (above-inflation) gain is taxed.
+    (DATA.payments||[]).forEach(p=>{ const eff=payIndexInfo(p).eff; cost+=eff;
+      inflAdj+=eff*(Math.pow(1+infl,Math.max(0,monthsBetween(new Date(p.date),saleDate)/12))-1); });
+    const impr=num("sm_improvements_nis"), rate=num("sm_cgt_rate_pct")/100;
+    const realGain=price-cost-inflAdj-broker-lawyer-other-impr;
+    const ceiling=parseFloat(SM.single_home_exemption_ceiling_nis)||0;
+    let tax=0;
+    if(taxed) tax=Math.max(0,realGain)*rate;
+    // Exempt sale above the ceiling: roughly the share of the gain attributable to the excess is taxed.
+    else if(ceiling&&price>ceiling) tax=Math.max(0,realGain)*(price-ceiling)/price*rate;
+    const net=price-broker-lawyer-other-tax-num("sm_mortgage_balance_nis");
+    return {date:saleDate,price,broker,lawyer,other,cost,inflAdj,impr,realGain,tax,net,profit:price-cost-impr-broker-lawyer-other-tax};
+  }
+  function ptax(price,brackets){ let tax=0, prev=0;
+    for(const [cap,pct] of brackets){ const top=cap==null?price:Math.min(price,cap);
+      if(top>prev) tax+=(top-prev)*pct/100; if(cap==null||price<=cap) break; prev=cap; }
+    return tax; }
+  const presetHost=document.getElementById("uf-presets");
+  (UF.presets||[]).forEach(pr=>{ const b=document.createElement("button"); b.className="addbtn"; b.type="button";
+    b.textContent=pr.label+" · "+(pr.price_nis/1e6).toFixed(2)+" מ'";
+    b.addEventListener("click",()=>{ inputs.uf_target_price_nis.value=pr.price_nis; state.uf_target_price_nis=pr.price_nis; save(); renderSale(); });
+    presetHost.appendChild(b); });
+  const bridgeChk=document.getElementById("uf-bridge");
+  bridgeChk.checked=state.uf_buy_before_sell!=null?!!state.uf_buy_before_sell:!!UF.buy_before_sell;
+  bridgeChk.addEventListener("change",()=>{ state.uf_buy_before_sell=bridgeChk.checked; save(); renderSale(); });
+  const metric=(label,val,note,warn)=>'<div class="metric"'+(warn?' style="border:1px solid #b45309"':'')+'><span>'+label+'</span><strong>'+val+'</strong>'+(note?'<span class="note">'+note+'</span>':'')+'</div>';
+  window.renderSale=function(){
+    const form4=inputs.sm_form4_month_est.value||SM.form4_month_est||"2028-09";
+    const hold=parseFloat(SM.tax_hold_months)||18;
+    const dA=addMonths(form4,0), dB=addMonths(form4,hold);
+    const A=scenario(dA,true), B=scenario(dB,false);
+    document.getElementById("sale-timeline").innerHTML=
+      metric("מכירה מותרת לפי החוזה",CTX.contract_sale_from||"—","7 שנים מהזכייה ("+(CTX.lottery_year||"—")+")")+
+      metric("טופס 4 (משוער)",form4,"עדכנו לתאריך בפועל כשיגיע")+
+      metric("מכירה בלי מס שבח",ym(dB),hold+" חודשים מטופס 4 (דירה יחידה)")+
+      metric("חלון דירה חלופית",(UF.two_homes_window_months||18)+" חודשים","למכור את הישנה אחרי קניית החדשה — לאמת (18/24)");
+    const rows=[["מחיר מכירה","price"],["תיווך (+מע\"מ)","broker",-1],["עו\"ד (+מע\"מ)","lawyer",-1],["הוצאות נוספות","other",-1],
+      ["עלות הדירה (חוזה + הצמדה)","cost",0],["תיאום אינפלציה (פטור)","inflAdj",0],["השבחות לניכוי","impr",0],["שבח ריאלי","realGain",0],
+      ["מס שבח","tax",-1],["יתרת משכנתא לסילוק",null,-1],["💵 נשאר ביד","net"],["📈 רווח נקי מעל מה ששילמתם","profit"]];
+    const cell=(sc,k,sign)=>{ const val=k?sc[k]:num("sm_mortgage_balance_nis"); return (sign===-1&&val?"−":"")+nis(val); };
+    document.getElementById("sm-table").innerHTML='<tr><th></th><th>מכירה בטופס 4 ('+ym(dA)+')</th><th>מכירה אחרי '+hold+' ח׳ ('+ym(dB)+')</th></tr>'+
+      rows.map(([l,k,sign])=>{ const strong=(k==="net"||k==="profit");
+        return '<tr'+(strong?' style="font-weight:700"':'')+'><td>'+l+'</td><td class="num">'+cell(A,k,sign)+'</td><td class="num">'+cell(B,k,sign)+'</td></tr>'; }).join("");
+    const diff=B.net-A.net;
+    document.getElementById("sm-verdict").innerHTML=diff>0
+      ? '⏳ המתנה של '+hold+' חודשים אחרי טופס 4 שווה בערך <b>'+nis(diff)+'</b> במזומן (בעיקר מס שבח שנחסך), בהנחת מחיר זהה.'
+      : 'בהנחות הנוכחיות אין יתרון כספי להמתנה.';
+    // ---- הדירה הבאה ----
+    const price=num("uf_target_price_nis");
+    const ptS=ptax(price,UF.purchase_tax_single||[]), ptA=ptax(price,UF.purchase_tax_additional||[]);
+    const buyCosts=price*((parseFloat(UF.buy_broker_pct)||0)+(parseFloat(UF.buy_lawyer_pct)||0))/100*vat;
+    const equity=B.net+num("uf_extra_savings_nis"), need=price+ptS+buyCosts, loan=Math.max(0,need-equity);
+    const ltv=price?loan/price*100:0, maxLtv=parseFloat(UF.max_ltv_pct)||70;
+    const r=num("uf_mortgage_rate_pct")/1200, n=Math.max(1,num("uf_mortgage_years")*12);
+    const pmt=loan?(r?loan*r/(1-Math.pow(1+r,-n)):loan/n):0, totalInt=pmt*n-loan;
+    const inc=num("uf_monthly_net_income_nis"), pti=inc?pmt/inc*100:null, maxPti=parseFloat(UF.max_pti_pct)||40;
+    let out=metric("הון עצמי מהמכירה",nis(equity),"נשאר ביד אחרי "+hold+" ח׳ + חסכונות")+
+      metric("עלות כוללת",nis(need),"מס רכישה "+nis(ptS)+" + עו\"ד/תיווך "+nis(buyCosts))+
+      metric("הלוואה נדרשת",nis(loan),"מימון "+ltv.toFixed(0)+"% (מקס׳ "+maxLtv+"%)",ltv>maxLtv)+
+      metric("החזר חודשי",nis(pmt),num("uf_mortgage_years")+" שנה · "+num("uf_mortgage_rate_pct")+"% (שפיצר)")+
+      metric("סה\"כ ריבית",nis(totalInt),"לאורך כל התקופה")+
+      (pti!=null?metric("החזר / הכנסה",pti.toFixed(0)+"%","יעד ≤ "+maxPti+"%",pti>maxPti):"");
+    let warn="";
+    if(ltv>maxLtv) warn+='<div class="stale stale-bad">🛑 המימון ('+ltv.toFixed(0)+'%) מעל תקרת '+maxLtv+'% למשפר דיור — חסר הון עצמי של ~'+nis(loan-price*maxLtv/100)+'.</div>';
+    if(pti!=null&&pti>maxPti) warn+='<div class="stale stale-warn">⚠️ ההחזר החודשי הוא '+pti.toFixed(0)+'% מההכנסה — בנקים מקשים מעל ~'+maxPti+'%.</div>';
+    if(bridgeChk.checked){
+      const bridgeCost=B.net*num("uf_bridge_rate_pct")/100*num("uf_bridge_months")/12;
+      out+=metric("עלות גישור",nis(bridgeCost),"ריבית על "+nis(B.net)+" ל-"+num("uf_bridge_months")+" ח׳");
+      warn+='<div class="stale stale-warn">🔁 קונים לפני שמוכרים: חייבים למכור את נוריות תוך '+(UF.two_homes_window_months||18)+' חודשים כדי לשלם מס רכישה של דירה יחידה. אחרת מס רכישה של דירה נוספת: ~'+nis(ptA)+' במקום '+nis(ptS)+' (<b>+'+nis(ptA-ptS)+'</b>).</div>';
+    }
+    document.getElementById("uf-out").innerHTML=out;
+    document.getElementById("uf-warn").innerHTML=warn;
+  };
+  window.renderSale();
+})();
+
 // ---------- קיפול נושאים + ניווט ----------
 const sections=[...document.querySelectorAll("section")];
 const applers=[];
@@ -1132,7 +1257,7 @@ const ca=document.getElementById("collapse-all"); if(ca) ca.addEventListener("cl
 // כל סקשן משויך לתחום לפי כותרת; הסקשנים מועברים לפאנל התחום בסדר הרצוי.
 const DOMAINS=[
   {key:"overview", label:"סקירה", match:["#value-summary","דברים לביצוע","משימות לביצוע"]},
-  {key:"finance", label:"כספים", match:["נתוני שוק","לוח תשלומים","תחזית תזרים","הערכת שווי"]},
+  {key:"finance", label:"כספים", match:["נתוני שוק","לוח תשלומים","תחזית תזרים","הערכת שווי","מכירה ושדרוג"]},
   {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","רעיונות עיצוב לפי חדר","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה","לו\"ז ביצוע","מדריך אנשי מקצוע","ספקים והצעות","רשימת קניות"]},
   {key:"handover", label:"מסירה", match:["מסירה ובדק בית"]},
   {key:"property", label:"נכס וסביבה", match:["מיקום, תוכניות","מידות חדרים","סקירת שכונה","פלופ","מגבלות מחיר"]},
@@ -1208,9 +1333,13 @@ def main():
     management = load_json(os.path.join(HERE, "management.json"), {}) or {}
     status = load_json(os.path.join(HERE, "updates", "update-status.json"), {}) or {}
     update_history = load_json(os.path.join(HERE, "updates", "update-history.json"), []) or []
+    # market_latest.json is committed (merged last-good per source by update_all.py), so CI
+    # checkouts — which have no git-ignored deals-*.json — still render the market section.
     deal_files = sorted(glob.glob(os.path.join(HERE, "updates", "deals-*.json")))
-    market = load_json(deal_files[-1], {}) if deal_files else {}
+    market = load_json(os.path.join(HERE, "market_latest.json"), None) \
+        or (load_json(deal_files[-1], {}) if deal_files else {})
     market = market or {}
+    market_status = load_json(os.path.join(HERE, "market_status.json"), {}) or {}
     # Construction-inputs index series (fetch_index.py); the dashboard also refreshes it live from CBS.
     cindex = load_json(os.path.join(HERE, "construction_index.json"), {}) or {}
     today = datetime.date.today().isoformat()
@@ -1223,6 +1352,8 @@ def main():
     pay = apt.get("payments", {})
     nb = apt.get("neighborhood_review", {})
     up = apt.get("upgrade_paths", {})
+    mg_sale = management.get("sale_model", {})
+    mg_up = management.get("upgrade_finance", {})
     cons = apt.get("constraints", {})
     docs = apt.get("documents", {})
     photo = find_photo()
@@ -1268,6 +1399,21 @@ def main():
         {},
     )
     madlan_six = (madlan_market.get("prices_by_rooms") or {}).get("6", {})
+    madlan_stale_note = (
+        f'<div class="stale stale-warn">⚠️ Madlan חסם את הריצה האחרונה ({madlan_market.get("stale_reason", "")}) — '
+        f'מוצגים הנתונים האחרונים שנשמרו (נשאבו {str(madlan_market.get("fetched_at", "—"))[:10]}).</div>'
+        if madlan_market.get("stale") else "")
+    # Freshness banner: a green Actions run used to hide weeks of failed fetches.
+    ms_last_ok = str(market_status.get("last_success") or "")[:10]
+    ms_attempt = str(market_status.get("last_attempt") or "")[:10]
+    if market_status and not market_status.get("last_attempt_ok", True):
+        market_banner = (f'<div class="stale stale-bad">🛑 רענון נתוני השוק האחרון ({ms_attempt}) נכשל: '
+                         f'{market_status.get("last_error", "")}. הנתונים כאן מ-{ms_last_ok or "לא ידוע"}. '
+                         'שרתי GitHub נחסמים (403) — הריצו <code>python dira-nuriot/update_all.py</code> מהמחשב בבית ודחפו.</div>')
+    elif ms_last_ok:
+        market_banner = f'<div class="stale stale-ok">✅ נתוני השוק רועננו ב-{ms_last_ok}.</div>'
+    else:
+        market_banner = ""
     narkisim_market = next(
         (item for item in market.get("supplemental_sources", [])
          if item.get("source") == "madlan" and item.get("comparison_area") == "נרקיסים" and item.get("ok", True)),
@@ -1437,6 +1583,8 @@ def main():
                ],
                "rooms_seed": apt.get("rooms_dimensions") or ["כניסה", "סלון + פינת אוכל", "מטבח"],
                "payments": pay.get("schedule", []),
+               "sale_ctx": {"est": est, "contract_sale_from": restr.get("contract_sale_allowed_from"),
+                            "lottery_year": restr.get("lottery_year")},
                "management": management,
                "market": market,
                "update_status": {
@@ -1585,7 +1733,7 @@ def main():
         '<h3>🗺️ תוכנית הדירה (128A5) + מהלכי השבחה</h3>'
         + plan_visual +
         '<div class="pillrow" style="margin-top:10px">'
-        '<span class="pill" style="border-color:#f5c451;color:#fde9b8">🏆 מטבח → לפתוח לסלון/פינת אוכל (השבחה מקסימלית)</span>'
+        '<span class="pill" style="border-color:#f5c451;color:#fde9b8">🏆 מטבח — כבר פתוח עם בר ישיבה → להשקיע בארונות/משטח/בר</span>'
         '<span class="pill" style="border-color:#22d3ee;color:#bae6fd">🚽 שירותי 113/173 (אסלה) — לרוב עדיף להשאיר כ-WC אורחים</span>'
         '<span class="pill" style="border-color:#f87171;color:#fecaca">⛔ ממ"ד — קירות בטון, אסור לגעת</span>'
         '</div>'
@@ -1687,6 +1835,7 @@ def main():
   <section>
     <h2>🩺 מצב מערכת ונתונים</h2>
     <div class="health-grid">
+      <div class="health-item"><b>רענון שוק אחרון</b><span class="badge {'badge-ok' if market_status.get('last_attempt_ok') else 'badge-bad'}">{'הצליח' if market_status.get('last_attempt_ok') else 'נכשל'}</span><div class="note">ניסיון {ms_attempt or '—'} · הצלחה אחרונה {ms_last_ok or '—'}</div></div>
       <div class="health-item"><b>מקור שוק</b><span class="badge {source_badge}">{'זמין' if market else 'חסר'}</span><div class="note">Nadlan + GovMap</div></div>
       <div class="health-item"><b>גרסת נתונים</b><span class="badge {freshness_class}">{dataset_version or 'לא ידועה'}</span><div class="note">גיל: {freshness_text}</div></div>
       <div class="health-item"><b>התאמת גבול</b><span class="badge {boundary_badge}">{'פער — נוריות/מרום ראשון' if market_location.get('boundary_name_mismatch') else 'תואם'}</span><div class="note">אזור {market_location.get('statistical_area_id','—')}</div></div>
@@ -1708,7 +1857,8 @@ def main():
 
   <section>
     <h2>🏙️ נתוני שוק רשמיים</h2>
-    <div class="warn">הנתון הרשמי הוא סיכום לכל גדלי הדירות באזור הסטטיסטי הישן “{public_market.get('statistical_area_name','—')}”. התצפית האחרונה היא מ־03/2025 ואין בקובץ מחיר שכונתי מאוחר יותר; לכן היא היסטורית בלבד ואינה שווי נוכחי לדירת 6 חדרים בנוריות.</div>
+    {market_banner}
+    <div class="warn">הנתון הרשמי הוא סיכום לכל גדלי הדירות באזור הסטטיסטי הישן “{public_market.get('statistical_area_name','—')}” (גרסת נתונים {dataset_version or '—'}). התצפית האחרונה היא מ־{(public_market.get('latest_neighborhood_period') or {}).get('month','—')}/{(public_market.get('latest_neighborhood_period') or {}).get('year','—')}; זהו ממוצע כל הגדלים באזור רחב — רקע בלבד, לא שווי לדירת 6 חדרים בנוריות.</div>
     <div class="metric-row">
         <div class="metric"><span>תצפית ממשלתית אחרונה — ישנה</span><strong>{shekel(public_market.get('latest_neighborhood_price_nis'))}</strong><span class="note">{(public_market.get('latest_neighborhood_period') or {}).get('month','—')}/{(public_market.get('latest_neighborhood_period') or {}).get('year','—')} · כל החדרים · אין תצפית מאוחרת יותר</span></div>
       <div class="metric"><span>ממוצע שנה — כל החדרים</span><strong>{shekel(public_market.get('all_rooms_last_year_avg_price_nis'))}</strong><span class="note">שינוי {public_market.get('all_rooms_price_change_pct','—')}%</span></div>
@@ -1717,6 +1867,7 @@ def main():
     <div class="src"><a href="{market.get('source_url','#')}" target="_blank">מקור ממשלתי ↗</a></div>
     <div class="card" style="margin-top:12px">
       <h3>Madlan — אינדיקציות עדכניות לנוריות (מקור עיקרי לעדכניות)</h3>
+      {madlan_stale_note}
       <div class="metric-row">
         <div class="metric"><span>6 חדרים — בנייה חדשה</span><strong>{shekel(madlan_six.get('new_build_price_nis'))}</strong><span class="note">סיכום קטגוריה, לא עסקה בודדת</span></div>
         <div class="metric"><span>6 חדרים — יד שנייה</span><strong>{shekel(madlan_six.get('second_hand_price_nis'))}</strong><span class="note">סיכום קטגוריה</span></div>
@@ -1826,6 +1977,33 @@ def main():
         <tr><th>תאריך</th><th>שווי (₪)</th><th>הערה</th><th></th></tr>
       </table>
       <button class="addbtn" id="add-value">+ הוסף הערכה</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>💰 מכירה ושדרוג — כמה נשאר ביד</h2>
+    <div class="sub">מחשבון הערכה, לא ייעוץ מס. כל השדות ניתנים לעריכה ונשמרים. עלות הדירה כוללת את ההצמדה המחושבת מלוח התשלומים.</div>
+    <div class="card">
+      <h3>🗓️ מתי מותר — ומתי כדאי — למכור</h3>
+      <div class="metric-row" id="sale-timeline"></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>🧮 מכירה בטופס 4 מול המתנה לפטור ממס שבח</h3>
+      <div class="field-grid" id="sm-inputs"></div>
+      <div class="scroll" style="margin-top:12px"><table id="sm-table"></table></div>
+      <div class="stale stale-ok" id="sm-verdict"></div>
+      <div class="note">מס שבח: {mg_sale.get('cgt_rate_pct', 25)}% על השבח הריאלי (אחרי תיאום אינפלציה וניכוי הוצאות). פטור דירה יחידה דורש החזקה של {mg_sale.get('tax_hold_months', 18)} חודשים מטופס 4 ושזו הדירה היחידה. {mg_sale.get('_ceiling_note', '')}</div>
+      <div class="src">{srcs(mg_sale.get('sources'))}</div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>🏡 הדירה הבאה — משכנתא, מס רכישה וגישור</h3>
+      <div class="pillrow" id="uf-presets"></div>
+      <div class="field-grid" id="uf-inputs" style="margin-top:10px"></div>
+      <label class="note" style="display:block;margin-top:10px"><input type="checkbox" id="uf-bridge"> קונים לפני שמוכרים (הלוואת גישור)</label>
+      <div class="metric-row" id="uf-out"></div>
+      <div id="uf-warn"></div>
+      <div class="note">{mg_up.get('_rate_note', '')} {mg_up.get('_ltv_note', '')} {mg_up.get('_purchase_tax_note', '')}</div>
+      <div class="src">{srcs(mg_up.get('sources'))}</div>
     </div>
   </section>
 

@@ -360,7 +360,7 @@ def main():
         six_rooms = (madlan.get("prices_by_rooms") or {}).get("6", {})
         print(
             "✅ Madlan נסרק: 6 חד׳ חדש "
-            f"{(six_rooms.get('new_build_price_nis') or 0):,.0f} ₪ · "
+            f"{_price_or_na(six_rooms.get('new_build_price_nis'))} · "
             f"{madlan.get('year_deals_count', '—')} עסקאות בשנה"
         )
         comparison = next((item for item in healthy_madlan if item.get("comparison_area") == "נרקיסים"), None)
@@ -368,13 +368,18 @@ def main():
             comparison_six = (comparison.get("prices_by_rooms") or {}).get("6", {})
             print(
                 "✅ Madlan נרקיסים: 6 חד׳ חדש "
-                f"{(comparison_six.get('new_build_price_nis') or 0):,.0f} ₪ · "
+                f"{_price_or_na(comparison_six.get('new_build_price_nis'))} · "
                 f"{comparison.get('year_deals_count', '—')} עסקאות בשנה"
             )
     else:
         print(f"⚠️  Madlan לא זמין: {source_health['madlan'].get('reason', 'unknown error')}")
     print("ℹ️  Yad2 לא שולב: הגנת anti-bot והחבילה שנבדקה אינה מממשת מודל נדל״ן.")
 
+
+
+def _price_or_na(value):
+    # Madlan publishes null for empty categories; printing 0 ₪ read as a real (broken) price.
+    return f"{value:,.0f} ₪" if value else "אין נתון"
 
 if __name__ == "__main__":
     main()

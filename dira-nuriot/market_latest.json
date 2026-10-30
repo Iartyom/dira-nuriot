@@ -1,0 +1,200 @@
+{
+  "query": "נוריות ראשון לציון",
+  "fetched_at": "2026-10-30",
+  "source": "nadlan.gov.il + GovMap (public unattended endpoints)",
+  "source_url": "https://data.nadlan.gov.il/api/pages/neighborhood/buy/65209940.json",
+  "location": {
+    "requested_label": "נוריות, ראשון לציון",
+    "current_id": "67689667",
+    "statistical_area_id": "65209940",
+    "x": 184121.2095,
+    "y": 652607.6766,
+    "resolution": "verified_seed",
+    "statistical_area_name": "מרום ראשון",
+    "boundary_name_mismatch": true
+  },
+  "raw_count": 0,
+  "deals": [],
+  "summary": null,
+  "public_market_summary": {
+    "dataset_version": "20-08-2026",
+    "statistical_area_name": "מרום ראשון",
+    "settlement_name": "ראשון לציון",
+    "settlement_id": 8300,
+    "all_rooms_last_year_avg_price_nis": 4278400,
+    "all_rooms_price_change_pct": 8.63,
+    "five_rooms_last_year_avg_price_nis": null,
+    "latest_neighborhood_period": {
+      "year": 2026,
+      "month": 3
+    },
+    "latest_neighborhood_price_nis": 4278400
+  },
+  "supplemental_sources": [
+    {
+      "source": "madlan",
+      "source_type": "market_indicator",
+      "comparison_area": "נוריות",
+      "zone_name": "נוריות, בראשון לציון",
+      "source_updated_at": null,
+      "active_for_sale_count": 16,
+      "active_for_rent_count": 9,
+      "year_deals_count": 48,
+      "total_deals_count": 198,
+      "average_price_per_sqm_nis": 21705.66,
+      "prices_by_rooms": {
+        "2": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        },
+        "3": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        },
+        "4": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        },
+        "5": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        },
+        "6": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        },
+        "דירות מיוחדות": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        },
+        "בתים פרטיים": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        }
+      },
+      "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C",
+      "fetched_at": "2026-09-26T09:00:23.887913+00:00",
+      "stale": true,
+      "stale_reason": "HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "madlan",
+      "source_type": "market_indicator",
+      "comparison_area": "נרקיסים",
+      "zone_name": "נרקיסים, בראשון לציון",
+      "source_updated_at": null,
+      "active_for_sale_count": 56,
+      "active_for_rent_count": 1,
+      "year_deals_count": 107,
+      "total_deals_count": 138,
+      "average_price_per_sqm_nis": 26539.1,
+      "prices_by_rooms": {
+        "2": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        },
+        "3": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": 2236667,
+          "rent_nis": null
+        },
+        "4": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        },
+        "5": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        },
+        "6": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        },
+        "דירות מיוחדות": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        },
+        "בתים פרטיים": {
+          "new_build_price_nis": null,
+          "second_hand_price_nis": null,
+          "rent_nis": null
+        }
+      },
+      "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%A8%D7%A7%D7%99%D7%A1%D7%99%D7%9D-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C",
+      "fetched_at": "2026-09-26T09:00:25.080678+00:00",
+      "stale": true,
+      "stale_reason": "HTTP Error 403: Forbidden"
+    }
+  ],
+  "government_comparisons": [
+    {
+      "area": "נרקיסים",
+      "location": {
+        "requested_label": "נרקיסים, ראשון לציון",
+        "current_id": "67689477",
+        "x": 184122.3824,
+        "y": 651820.2008,
+        "resolution": "verified_seed",
+        "statistical_area_id": "65209882",
+        "statistical_area_name": "צמרות",
+        "boundary_name_mismatch": true
+      },
+      "summary": {
+        "dataset_version": "20-08-2026",
+        "statistical_area_name": "צמרות",
+        "settlement_name": "ראשון לציון",
+        "settlement_id": 8300,
+        "all_rooms_last_year_avg_price_nis": null,
+        "all_rooms_price_change_pct": null,
+        "five_rooms_last_year_avg_price_nis": null,
+        "latest_neighborhood_period": null,
+        "latest_neighborhood_price_nis": null
+      },
+      "source_url": "https://data.nadlan.gov.il/api/pages/neighborhood/buy/65209882.json",
+      "usable_neighborhood_price": false
+    }
+  ],
+  "source_health": {
+    "nadlan": {
+      "ok": true,
+      "kind": "government_summary"
+    },
+    "madlan": {
+      "ok": false,
+      "kind": "market_indicator",
+      "areas": {
+        "נוריות": false,
+        "נרקיסים": false
+      },
+      "reason": "No structured Nuriot summary returned."
+    },
+    "yad2": {
+      "ok": false,
+      "kind": "asking_listings",
+      "reason": "Live real-estate access is blocked by anti-bot controls; yad2-scraper 0.5.3 primarily supports vehicles."
+    },
+    "nadlan_narkisim": {
+      "ok": true,
+      "kind": "government_summary",
+      "usable_neighborhood_price": false
+    }
+  },
+  "limitations": [
+    "Individual transaction rows are protected by reCAPTCHA and are not fetched unattended.",
+    "The neighborhood is mapped to Nadlan's legacy statistical area; inspect boundary_name_mismatch.",
+    "Dataset freshness is reported by public_market_summary.dataset_version.",
+    "Public summary prices are not price-per-square-meter estimates and do not automatically overwrite apartment.json valuation."
+  ]
+}

@@ -36,7 +36,8 @@
 2. עדכן את הטבלאות ב-`README.md`: הערכת שווי + תוכנית שיפוץ.
 3. הוסף שורה ל**אינדקס העדכונים** ב-`README.md`.
 4. צור `updates/YYYY-MM-DD.md` עם snapshot מלא: מה נמצא, מקורות, ושינוי מהעדכון הקודם.
-5. הרץ `python3 build_html.py` כדי לרענן את `index.html`.
+5. אם שינית את `valuation_model`/`comparables` ב-`management.json` — עדכן `seed_version` לתאריך היום (כדי שלוחות שמורים יקבלו את הנתונים החדשים).
+6. הרץ `python3 update_all.py` (לא רק build) — מרענן גם `market_latest.json`/`market_status.json`.
 
 ## כללים
 - **כל מספר חייב מקור + תאריך.** אם לא בטוח — כתוב "הערכה" וציין רמת ביטחון.

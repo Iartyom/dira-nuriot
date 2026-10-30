@@ -1,14 +1,16 @@
 {
-  "_comment": "Editable management seeds. Runtime edits are stored in the browser and can be exported/imported as a versioned backup.",
+  "_comment": "Editable management seeds. Runtime edits are stored in the browser and can be exported/imported as a versioned backup. Bump seed_version when the research numbers change so saved boards pick up the new seeds.",
   "valuation_model": {
-    "base_value_nis": 3350000,
-    "base_label": "הערכת שוק ידנית 2026-08",
+    "seed_version": "2026-10-30",
+    "base_value_nis": 3480000,
+    "base_label": "Madlan נוריות ₪23,917/מ״ר × 145.5 מ״ר (מדלן, עודכן 09/2026)",
     "adjustments": [
-      {"key": "new_build", "label": "פרמיית בנייה חדשה", "pct": 3, "reason": "דירה חדשה בפרויקט חדש"},
+      {"key": "floor", "label": "קומה 2 מתוך 13", "pct": -4, "reason": "קומות נמוכות (בלי נוף) נמכרות בהנחה מול גבוהות — הערכה, לא נתון נמדד"},
+      {"key": "size", "label": "דירה גדולה (145 מ״ר)", "pct": -2, "reason": "₪/מ״ר יורד עם גודל הדירה; ממוצע השכונה כולל דירות קטנות — הערכה"},
       {"key": "balcony", "label": "מרפסת 13 מ״ר", "pct": 1, "reason": "שטח חוץ שימושי"},
-      {"key": "delivery", "label": "מסירה עתידית", "pct": -2, "reason": "אי-נזילות וסיכון עד מסירה"},
-      {"key": "boundary", "label": "אי-ודאות אזור סטטיסטי", "pct": -2, "reason": "Nadlan ממפה את נוריות למרום ראשון"}
+      {"key": "delivery", "label": "מסירה עתידית", "pct": -2, "reason": "אי-נזילות וסיכון עד מסירה (~09/2028)"}
     ],
+    "_removed_adjustments": "new_build (+3%) — כפל ספירה: הבסיס כבר מבנייה חדשה בנוריות. boundary (-2%) — הבסיס כבר לא מ-Nadlan/מרום ראשון.",
     "scenarios": [
       {"key": "conservative", "label": "שמרני", "multiplier": 0.95},
       {"key": "base", "label": "בסיס", "multiplier": 1.0},
@@ -17,28 +19,64 @@
   },
   "comparables": [
     {
+      "date": "2026-09",
+      "address": "נוריות — ממוצע שכונתי ₪/מ״ר (מדלן)",
+      "rooms": 6,
+      "area_sqm": 145.5,
+      "price_nis": 3480000,
+      "kind": "מדלן — ₪23,917/מ״ר × שטח הדירה",
+      "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C",
+      "confidence": "בינונית",
+      "comparable": true,
+      "notes": "ממוצע שכונתי (כל הגדלים, כל הקומות) מנורמל לשטח שלנו — לפני התאמות קומה/גודל."
+    },
+    {
+      "date": "2026",
+      "address": "נוריות — 6 חד׳, 152 מ״ר, קומה 17 (עסקה)",
+      "rooms": 6,
+      "area_sqm": 152,
+      "price_nis": 3680000,
+      "kind": "עסקה (מדלן) — קומה גבוהה",
+      "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C",
+      "confidence": "בינונית-נמוכה",
+      "comparable": true,
+      "notes": "₪24,210/מ״ר. נמצא בתקציר חיפוש של עמוד מדלן (2026-10-30); העמוד עצמו חוסם גישה ישירה — התאריך המדויק (06 או 10/2026) לא אומת. קומה 17 → פרמיית נוף מעל הדירה שלנו."
+    },
+    {
+      "date": "2026-10",
+      "address": "נוריות — 6 חד׳, 147 מ״ר, קומה 11 (מודעה)",
+      "rooms": 6,
+      "area_sqm": 147,
+      "price_nis": 3390000,
+      "kind": "מחיר מבוקש (מדלן) — לא עסקה",
+      "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C",
+      "confidence": "נמוכה",
+      "comparable": true,
+      "notes": "₪23,061/מ״ר מבוקש, בניין בן ~שנתיים, 2 חניות. מחיר מבוקש נסגר לרוב מתחתיו. מתקציר חיפוש (2026-10-30)."
+    },
+    {
       "date": "2026-08",
       "address": "נוריות — קטגוריית 6 חדרים",
       "rooms": 6,
       "area_sqm": null,
       "price_nis": 3610833,
-      "kind": "מדלן — אינדיקציית בנייה חדשה",
+      "kind": "מדלן — אינדיקציית בנייה חדשה (ישן)",
       "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%95%D7%A8%D7%99%D7%95%D7%AA-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C",
-      "confidence": "בינונית",
-      "comparable": true,
-      "notes": "סיכום קטגוריה עדכני; לא מודעה בודדת ולא עסקה סגורה. בר-השוואה: אותה שכונה + 6 חדרים."
+      "confidence": "נמוכה",
+      "comparable": false,
+      "notes": "מדלן הפסיק לפרסם את טבלת המחירים לפי חדרים (09/2026 = ריק). נשמר כרקע היסטורי."
     },
     {
-      "date": "2025-03",
-      "address": "מרום ראשון — אזור סטטיסטי",
+      "date": "2026-03",
+      "address": "מרום ראשון — אזור סטטיסטי (ממשלתי)",
       "rooms": null,
       "area_sqm": null,
-      "price_nis": 3997300,
+      "price_nis": 4278400,
       "kind": "סיכום ממשלתי — כל החדרים",
       "source_url": "https://data.nadlan.gov.il/api/pages/neighborhood/buy/65209940.json",
       "confidence": "נמוכה לנכס",
       "comparable": false,
-      "notes": "נתון מצרפי (כל החדרים), גבול סטטיסטי ישן — רקע בלבד, לא נכנס לממוצע."
+      "notes": "גרסת נתונים 20-08-2026, שינוי שנתי +8.6%. נתון מצרפי (כל הגדלים) לאזור סטטיסטי רחב — רקע בלבד."
     },
     {
       "date": "2026-06",
@@ -50,9 +88,67 @@
       "source_url": "https://www.madlan.co.il/area-info/%D7%A9%D7%9B%D7%95%D7%A0%D7%94-%D7%A0%D7%A8%D7%A7%D7%99%D7%A1%D7%99%D7%9D-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F-%D7%99%D7%A9%D7%A8%D7%90%D7%9C",
       "confidence": "בינונית",
       "comparable": false,
-      "notes": "שכונה סמוכה — בנצ׳מרק בלבד. סמן כ'בר-השוואה' רק אם רוצים לשקלל אותה בממוצע."
+      "notes": "שכונה סמוכה (₪26,539/מ״ר ב-09/2026) — בנצ׳מרק בלבד."
     }
   ],
+  "sale_model": {
+    "_comment": "מחשבון 'כמה נשאר ביד'. ערכים ניתנים לעריכה בלוח. הנחות מסומנות כהנחה; לא תחליף לייעוץ מס.",
+    "form4_month_est": "2028-09",
+    "tax_hold_months": 18,
+    "appreciation_pct_per_year": 0,
+    "_appreciation_note": "ברירת מחדל 0% = מחירי היום. מדד מחירי הדירות של הלמ\"ס: -2.0% בשנה האחרונה (08/2026).",
+    "broker_pct": 2,
+    "lawyer_pct": 0.5,
+    "vat_pct": 18,
+    "other_costs_nis": 0,
+    "improvements_nis": 0,
+    "_improvements_note": "הוצאות השבחה מתועדות (חשבוניות) — למשל מטבח/מיזוג — מותרות בניכוי בחישוב מס שבח. תיקונים/תחזוקה לא.",
+    "cgt_rate_pct": 25,
+    "inflation_pct_per_year": 1.5,
+    "_inflation_note": "אינפלציה 12 חודשים: 1.5% (מדד 08/2026), 1.6% (מדד 09/2026). החלק האינפלציוני של השבח פטור.",
+    "mortgage_balance_nis": 0,
+    "single_home_exemption_ceiling_nis": 5008000,
+    "_ceiling_note": "תקרת פטור דירה יחידה — הערך האחרון הידוע (2025), הוקפא; לאמת מול רשות המסים לפני מכירה.",
+    "sources": [
+      {"label": "פטור ממס שבח בדירה יחידה (18 חודשים) — כל-זכות", "url": "https://www.kolzchut.org.il/he/%D7%A4%D7%98%D7%95%D7%A8_%D7%9E%D7%9E%D7%A1_%D7%A9%D7%91%D7%97_%D7%91%D7%9E%D7%9B%D7%99%D7%A8%D7%AA_%D7%93%D7%99%D7%A8%D7%94_%D7%99%D7%97%D7%99%D7%93%D7%94"},
+      {"label": "מס שבח 2026 — מדלן", "url": "https://www.madlan.co.il/blog/?p=88796"},
+      {"label": "ריבית בנק ישראל 3.25% + אינפלציה (10/2026) — moneyplan", "url": "https://moneyplan.co.il/?p=61290"}
+    ]
+  },
+  "upgrade_finance": {
+    "_comment": "מחשבון הדירה הבאה: משכנתא, מס רכישה, גישור. הנחות ניתנות לעריכה.",
+    "presets": [
+      {"label": "מדרגה 1 — צעד ריאלי", "price_nis": 4750000},
+      {"label": "מדרגה 2 — שדרוג משמעותי", "price_nis": 6750000},
+      {"label": "מדרגה 3 — חלום", "price_nis": 10000000}
+    ],
+    "_presets_note": "אמצע הטווחים ב-upgrade_paths.tiers.",
+    "target_price_nis": 4750000,
+    "extra_savings_nis": 0,
+    "buy_broker_pct": 2,
+    "buy_lawyer_pct": 0.5,
+    "mortgage_rate_pct": 4.75,
+    "_rate_note": "הנחה ≈ ריבית הפריים (4.75%, 10/2026). התמהיל בפועל לפי הצעת הבנק.",
+    "mortgage_years": 25,
+    "monthly_net_income_nis": 0,
+    "max_ltv_pct": 70,
+    "_ltv_note": "משפר דיור (דירה חלופית): מימון עד 70% משווי הנכס הנרכש (בנק ישראל).",
+    "max_pti_pct": 40,
+    "buy_before_sell": false,
+    "bridge_months": 6,
+    "bridge_rate_pct": 5.75,
+    "_bridge_note": "הנחה: פריים + ~1%. תקופת הגישור לא תעלה על חלון המכירה של רשות המסים.",
+    "two_homes_window_months": 18,
+    "_window_note": "חלון למכירת הדירה הקודמת כדי לשלם מס רכישה של דירה יחידה — מקורות חלוקים (18 או 24 חודשים). לאמת לפני קנייה.",
+    "purchase_tax_single": [[1978745, 0], [2347040, 3.5], [6055070, 5], [20183565, 8], [null, 10]],
+    "purchase_tax_additional": [[6055070, 8], [null, 10]],
+    "_purchase_tax_note": "מדרגות 2026, מוקפאות עד 15.01.2028 — יתעדכנו עד מועד הקנייה. מדרגות דירה נוספת — לאמת.",
+    "sources": [
+      {"label": "מדרגות מס רכישה 2026 (הקפאה עד 01/2028) — קליקת הנדל\"ן", "url": "https://klikatnadlan.co.il/masrechishay2026/"},
+      {"label": "שיעור מימון לדירה חלופית 70% — בנק הפועלים", "url": "https://www.bankhapoalim.co.il/he/mortgage/loan-amount"},
+      {"label": "דירה חלופית: 18 או 24 חודשים — מרכז הנדל\"ן", "url": "https://www.nadlancenter.co.il/article/8683"}
+    ]
+  },
   "cash_flow": {
     "available_cash_nis": 0,
     "monthly_contribution_nis": 0,
