@@ -1009,6 +1009,10 @@ function addRoomRow(table,d){ d=d||{};
 }
 (function(){ const t=document.getElementById("rooms-table");
   const saved=state.rooms;
+  // Plan correction (2026-10-31): parents' bath is 168/178, not 148/178. Fix only that untouched seed row
+  // so boards saved earlier pick it up without losing other edits.
+  (saved||[]).forEach(d=>{ if(d && /148\/178/.test(d.room||"") && parseFloat(d.len)===1.48){
+    d.room=d.room.replace("148/178","168/178"); d.len=1.68; } });
   if(saved && saved.length) saved.forEach(d=>addRoomRow(t,d));
   else (DATA.rooms_seed||[]).forEach(d=>addRoomRow(t, typeof d==="string"?{room:d}:d));
   document.getElementById("add-room").addEventListener("click",()=>{addRoomRow(t,{});});
