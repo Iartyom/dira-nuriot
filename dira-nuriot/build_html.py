@@ -930,8 +930,6 @@ function renderValuationModel(){
   const adjusted=(parseFloat(state.valuation_base)||0)*(1+totalPct/100);
   document.getElementById("valuation-adjusted").textContent=nis(adjusted);
   document.getElementById("valuation-total-pct").textContent=(totalPct>=0?"+":"")+totalPct.toFixed(1)+"%";
-  const scenarios=document.getElementById("valuation-scenarios"); scenarios.innerHTML="";
-  (cfg.scenarios||[]).forEach(s=>{const el=document.createElement("div");el.className="scenario";el.innerHTML='<span>'+esc(s.label)+'</span><strong>'+nis(adjusted*s.multiplier)+'</strong><span class="note">×'+s.multiplier+'</span>';scenarios.appendChild(el);});
   save();
 }
 document.getElementById("valuation-base").addEventListener("input",e=>{state.valuation_base=e.target.value;save();renderValuationModel();});
@@ -1152,10 +1150,10 @@ const ca=document.getElementById("collapse-all"); if(ca) ca.addEventListener("cl
 // כל סקשן משויך לתחום לפי כותרת; הסקשנים מועברים לפאנל התחום בסדר הרצוי.
 const DOMAINS=[
   {key:"overview", label:"סקירה", match:["#value-summary","משימות לביצוע"]},
-  {key:"finance", label:"כספים", match:["נתוני שוק","לוח תשלומים","תחזית תזרים","הערכת שווי","מכירה ושדרוג"]},
-  {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","רעיונות עיצוב לפי חדר","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה","מדריך אנשי מקצוע"]},
+  {key:"finance", label:"כספים", match:["לוח תשלומים","הערכת שווי","מכירה ושדרוג"]},
+  {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","רעיונות עיצוב לפי חדר","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה"]},
   {key:"handover", label:"מסירה", match:["מסירה ובדק בית"]},
-  {key:"property", label:"נכס וסביבה", match:["מיקום, תוכניות","מידות חדרים","סקירת שכונה","מגבלות מחיר"]},
+  {key:"property", label:"נכס וסביבה", match:["מיקום, תוכניות","מידות חדרים","סקירת שכונה"]},
   {key:"system", label:"מערכת", match:["מצב מערכת"]},
 ];
 (function(){
@@ -1293,7 +1291,6 @@ def main():
          if item.get("source") == "madlan" and item.get("comparison_area") == "נוריות" and item.get("ok", True)),
         {},
     )
-    madlan_six = (madlan_market.get("prices_by_rooms") or {}).get("6", {})
     madlan_stale_note = (
         f'<div class="stale stale-warn">⚠️ Madlan חסם את הריצה האחרונה ({madlan_market.get("stale_reason", "")}) — '
         f'מוצגים הנתונים האחרונים שנשמרו (נשאבו {str(madlan_market.get("fetched_at", "—"))[:10]}).</div>'
@@ -1313,19 +1310,6 @@ def main():
         (item for item in market.get("supplemental_sources", [])
          if item.get("source") == "madlan" and item.get("comparison_area") == "נרקיסים" and item.get("ok", True)),
         {},
-    )
-    narkisim_six = (narkisim_market.get("prices_by_rooms") or {}).get("6", {})
-    government_narkisim = next(
-        (item for item in market.get("government_comparisons", []) if item.get("area") == "נרקיסים"),
-        {},
-    )
-    government_narkisim_summary = government_narkisim.get("summary") or {}
-    government_narkisim_location = government_narkisim.get("location") or {}
-    nuriot_six_price = madlan_six.get("new_build_price_nis") or 0
-    narkisim_six_price = narkisim_six.get("new_build_price_nis") or 0
-    narkisim_premium_pct = (
-        round((narkisim_six_price / nuriot_six_price - 1) * 100, 1)
-        if nuriot_six_price and narkisim_six_price else None
     )
     dataset_version = public_market.get("dataset_version")
     dataset_age_days = None
@@ -1386,12 +1370,6 @@ def main():
         gantt_html += (f'<div class="week"><div class="week-head"><span class="wk">שבוע {w["week"]}</span>'
                        f'<span class="wk-title">{w["title"]}</span><span class="trade">{w.get("trade","")}</span></div>'
                        f'<ul class="tasks">{tasks}</ul></div>')
-
-    # ----- אנשי מקצוע (רפרנס) -----
-    pros_ref = ""
-    for pr in reno.get("professionals", []):
-        pros_ref += (f'<tr><td><b>{pr["he"]}</b></td><td>{pr["role"]}</td>'
-                     f'<td class="num">{pr.get("when","")}</td></tr>')
 
     # ----- דברים לביצוע (נגזר מ-constraints + valuation) -----
     actions = [
@@ -1522,17 +1500,15 @@ def main():
         <button class="addbtn elist-add" data-elist="action">+ הוסף</button>
       </div>
     </div>"""
-    restr_section = f"""
-  <section>
-    <h2>⚖️ מגבלות מחיר למשתכן</h2>
-    <div class="card restr">
+    restr_card = f"""
+    <div class="card restr" style="margin-top:12px">
+      <h3>⚖️ מגבלות מחיר למשתכן</h3>
       <div><b>נעילת מכירה:</b> {restr.get('sale_lock','')}</div>
       <div><b>קנס מכירה מוקדמת:</b> {restr.get('early_sale_penalty_nis','')}</div>
       <div><b>השכרה:</b> {restr.get('rent','')}</div>
       <div><b>מס שבח אחרי ההגבלה:</b> {restr.get('tax_after_lock','')}</div>
       <div class="src"><a href="{restr.get('source',{}).get('url','#')}" target="_blank">{restr.get('source',{}).get('label','')} ↗</a></div>
-    </div>
-  </section>"""
+    </div>"""
 
     # ----- מיקום, תוכניות ומסמכים רשמיים -----
     documents_section = ""
@@ -1743,43 +1719,6 @@ def main():
     </div>
   </section>
 
-  <section>
-    <h2>🏙️ נתוני שוק רשמיים</h2>
-    {market_banner}
-    <div class="warn">הנתון הרשמי הוא סיכום לכל גדלי הדירות באזור הסטטיסטי הישן “{public_market.get('statistical_area_name','—')}” (גרסת נתונים {dataset_version or '—'}). התצפית האחרונה היא מ־{(public_market.get('latest_neighborhood_period') or {}).get('month','—')}/{(public_market.get('latest_neighborhood_period') or {}).get('year','—')}; זהו ממוצע כל הגדלים באזור רחב — רקע בלבד, לא שווי לדירת 6 חדרים בנוריות.</div>
-    <div class="metric-row">
-        <div class="metric"><span>תצפית ממשלתית אחרונה — ישנה</span><strong>{shekel(public_market.get('latest_neighborhood_price_nis'))}</strong><span class="note">{(public_market.get('latest_neighborhood_period') or {}).get('month','—')}/{(public_market.get('latest_neighborhood_period') or {}).get('year','—')} · כל החדרים · אין תצפית מאוחרת יותר</span></div>
-      <div class="metric"><span>ממוצע שנה — כל החדרים</span><strong>{shekel(public_market.get('all_rooms_last_year_avg_price_nis'))}</strong><span class="note">שינוי {public_market.get('all_rooms_price_change_pct','—')}%</span></div>
-      <div class="metric"><span>ממוצע שנה — 5 חדרים</span><strong>{shekel(public_market.get('five_rooms_last_year_avg_price_nis'))}</strong><span class="note">קטגוריה קרובה, לא זהה</span></div>
-    </div>
-    <div class="src"><a href="{market.get('source_url','#')}" target="_blank">מקור ממשלתי ↗</a></div>
-    <div class="card" style="margin-top:12px">
-      <h3>Madlan — אינדיקציות עדכניות לנוריות (מקור עיקרי לעדכניות)</h3>
-      {madlan_stale_note}
-      <div class="metric-row">
-        <div class="metric"><span>6 חדרים — בנייה חדשה</span><strong>{shekel(madlan_six.get('new_build_price_nis'))}</strong><span class="note">סיכום קטגוריה, לא עסקה בודדת</span></div>
-        <div class="metric"><span>6 חדרים — יד שנייה</span><strong>{shekel(madlan_six.get('second_hand_price_nis'))}</strong><span class="note">סיכום קטגוריה</span></div>
-        <div class="metric"><span>ממוצע עסקאות למ״ר</span><strong>{shekel(madlan_market.get('average_price_per_sqm_nis'))}</strong><span class="note">{madlan_market.get('total_deals_count','—')} עסקאות בסיכום</span></div>
-        <div class="metric"><span>עסקאות בשנה</span><strong>{madlan_market.get('year_deals_count','—')}</strong><span class="note">מודעות פעילות למכירה: {madlan_market.get('active_for_sale_count','—')}</span></div>
-      </div>
-      <div class="sub">עודכן במקור: {madlan_market.get('source_updated_at','—')} · מקור משלים מסחרי; אין לערבב עם עסקאות ממשלתיות ללא תיוג.</div>
-      <div class="src"><a href="{madlan_market.get('source_url','#')}" target="_blank">Madlan נוריות ↗</a></div>
-    </div>
-    <div class="card" style="margin-top:12px">
-      <h3>השוואת שכונה חדשה סמוכה — נרקיסים</h3>
-      <div class="metric-row">
-        <div class="metric"><span>6 חדרים — בנייה חדשה</span><strong>{shekel(narkisim_six.get('new_build_price_nis'))}</strong><span class="note">פער מול נוריות: {('+' + str(narkisim_premium_pct) + '%') if narkisim_premium_pct is not None else '—'}</span></div>
-        <div class="metric"><span>ממוצע עסקאות למ״ר</span><strong>{shekel(narkisim_market.get('average_price_per_sqm_nis'))}</strong><span class="note">מקור Madlan</span></div>
-        <div class="metric"><span>עסקאות בשנה</span><strong>{narkisim_market.get('year_deals_count','—')}</strong><span class="note">מול {madlan_market.get('year_deals_count','—')} בנוריות</span></div>
-        <div class="metric"><span>מודעות פעילות למכירה</span><strong>{narkisim_market.get('active_for_sale_count','—')}</strong><span class="note">מדד עומק היצע</span></div>
-      </div>
-      <div class="warn">נרקיסים מתאימה כבנצ׳מרק לשכונה חדשה סמוכה, אך אינה נכס זהה: יש הבדלים בבשלות השכונה, מלאי, מיקום פנימי, קומה, מפרט ומועד מסירה.</div>
-      <div class="warn" style="background:#3b1f06;border-color:#b45309">מקור ממשלתי: נרקיסים ממופה לאזור הישן “{government_narkisim_summary.get('statistical_area_name','—')}” ({government_narkisim_location.get('statistical_area_id','—')}), גרסה {government_narkisim_summary.get('dataset_version','—')}. קיימת אינדיקציית עסקאות, אך מחירי השכונה הפומביים ריקים—לכן הם אינם נכנסים לחישוב.</div>
-      <div class="src"><a href="{narkisim_market.get('source_url','#')}" target="_blank">Madlan נרקיסים ↗</a></div>
-      <div class="src"><a href="{government_narkisim.get('source_url','#')}" target="_blank">Nadlan ממשלתי — מיפוי נרקיסים ↗</a></div>
-    </div>
-  </section>
-
   <div class="grid" id="value-summary">
     <div class="card"><h3>מחיר רכישה</h3><div class="big">{shekel(paid_price)}</div><div class="sub">חוזה {pur.get('contract_signed','')} · ~{pur.get('price_per_sqm_paid','—'):,} ₪/מ"ר · מטבח לא כלול</div></div>
     <div class="card"><h3>שווי שוק מוערך</h3><div class="big">{shekel(est)}</div><div class="sub">טווח {shekel(val.get('estimated_value_low_nis'))}–{shekel(val.get('estimated_value_high_nis'))} · ביטחון {val.get('confidence','—')}</div></div>
@@ -1807,11 +1746,9 @@ def main():
       <div>הפרשי הצמדה פתוחים (על תשלומים ששולמו): <b id="open-linkage-total">—</b></div>
       <div>נותר לשלם: <b id="remaining-total">—</b> <span class="sub" id="remaining-split"></span></div>
     </div>
-  </section>
+    <div class="card" style="margin-top:12px">
+      <h3>💰 תזרים ומימון עד מסירה</h3>
 
-  <section>
-    <h2>💰 תחזית תזרים ומימון עד מסירה</h2>
-    <div class="card">
       <div class="field-grid">
         <label>מזומן זמין<input class="cell" id="cash-available_cash_nis" type="number"></label>
         <label>הפקדה חודשית<input class="cell" id="cash-monthly_contribution_nis" type="number"></label>
@@ -1837,7 +1774,6 @@ def main():
       <div class="field-grid"><label>שווי בסיס<input class="cell" id="valuation-base" type="number"></label></div>
       <div id="valuation-adjustments" style="margin-top:10px"></div>
       <div class="foot"><div>סך התאמות: <b id="valuation-total-pct">—</b></div><div>שווי מתואם: <span class="big2" id="valuation-adjusted">—</span></div></div>
-      <div class="scenario-grid" id="valuation-scenarios"></div>
     </div>
     <div class="card scroll" style="margin-top:12px">
       <h3>נכסים להשוואה — סוג המקור תמיד גלוי</h3>
@@ -1853,6 +1789,17 @@ def main():
     <div class="card" style="margin-top:12px">
       <h3>📉 מגמת מחירים — ראשל"צ/נוריות מול ארצי</h3>
       {trend_chart_html}
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>📡 מקורות שוק וטריות</h3>
+      {market_banner}
+      {madlan_stale_note}
+      <div class="metric-row">
+        <div class="metric"><span>מדלן נוריות — ממוצע ₪/מ״ר</span><strong>{shekel(madlan_market.get('average_price_per_sqm_nis'))}</strong><span class="note">{madlan_market.get('year_deals_count','—')} עסקאות בשנה · עודכן {madlan_market.get('source_updated_at','—')}</span></div>
+        <div class="metric"><span>נרקיסים (בנצ׳מרק) — ₪/מ״ר</span><strong>{shekel(narkisim_market.get('average_price_per_sqm_nis'))}</strong><span class="note">שכונה סמוכה — רקע בלבד</span></div>
+        <div class="metric"><span>ממשלתי — {public_market.get('statistical_area_name','—')}</span><strong>{shekel(public_market.get('all_rooms_last_year_avg_price_nis'))}</strong><span class="note">כל הגדלים, אזור רחב · שינוי {public_market.get('all_rooms_price_change_pct','—')}% · גרסה {dataset_version or '—'}</span></div>
+      </div>
+      <div class="src"><a href="{madlan_market.get('source_url','#')}" target="_blank">Madlan נוריות ↗</a> · <a href="{narkisim_market.get('source_url','#')}" target="_blank">Madlan נרקיסים ↗</a> · <a href="{market.get('source_url','#')}" target="_blank">Nadlan ממשלתי ↗</a></div>
     </div>
     <div class="card" style="margin-top:12px">
       <p style="margin-top:0">{val.get('trend','')}</p>
@@ -1875,6 +1822,7 @@ def main():
       <h3>🗓️ מתי מותר — ומתי כדאי — למכור</h3>
       <div class="metric-row" id="sale-timeline"></div>
     </div>
+{restr_card}
     <div class="card" style="margin-top:12px">
       <h3>🧮 מכירה בטופס 4 מול המתנה לפטור ממס שבח</h3>
       <div class="field-grid" id="sm-inputs"></div>
@@ -1972,14 +1920,6 @@ def main():
   {shortest_section}
 
   <section>
-    <h2>👷 מדריך אנשי מקצוע</h2>
-    <div class="card"><table>
-      <tr><th>בעל מקצוע</th><th>תפקיד</th><th>מתי</th></tr>
-      {pros_ref}
-    </table></div>
-  </section>
-
-  <section>
     <h2>🔑 מסירה ובדק בית (לקראת ~2028)</h2>
     <div class="warn">🔍 {hand.get('inspection_tip','')}</div>
     <div class="warn" style="background:#3b1f06;border-color:#b45309">⏱️ {hand.get('delay_note','')}</div>
@@ -2020,7 +1960,6 @@ def main():
     </div>
   </section>
 
-{restr_section}
 
   <footer>עודכן {today} · index.html self-contained · עריכות מקומיות עם גיבוי/שחזור · מקור-אמת: apartment.json + renovation.json + management.json</footer>
 """

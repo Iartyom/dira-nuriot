@@ -13,7 +13,7 @@ def test_build_contains_management_modules():
         html = handle.read()
     required = [
         'מצב מערכת ונתונים',
-        'נתוני שוק רשמיים',
+        'מקורות שוק וטריות',
         'comparables-table',
         'cash-monthly-needed',
         'reno-track-table',

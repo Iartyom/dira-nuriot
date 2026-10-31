@@ -7,11 +7,10 @@
   "properties": {
     "valuation_model": {
       "type": "object",
-      "required": ["base_value_nis", "adjustments", "scenarios"],
+      "required": ["base_value_nis", "adjustments"],
       "properties": {
         "base_value_nis": {"type": "number", "minimum": 0},
-        "adjustments": {"type": "array", "items": {"type": "object", "required": ["key", "label", "pct"]}},
-        "scenarios": {"type": "array", "items": {"type": "object", "required": ["key", "label", "multiplier"]}}
+        "adjustments": {"type": "array", "items": {"type": "object", "required": ["key", "label", "pct"]}}
       }
     },
     "comparables": {"type": "array", "items": {"type": "object", "required": ["date", "address", "price_nis", "kind", "confidence"]}},
