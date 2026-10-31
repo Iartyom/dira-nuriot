@@ -1,36 +1,18 @@
 {
   "_comment": "Editable management seeds. Runtime edits are stored in the browser and can be exported/imported as a versioned backup. Bump seed_version when the research numbers change so saved boards pick up the new seeds.",
   "valuation_model": {
-    "seed_version": "2026-10-30b",
-    "base_value_nis": 3480000,
-    "base_label": "Madlan נוריות ₪23,917/מ״ר × 145.5 מ״ר (09/2026) — נתמך ב-2 עסקאות 6 חד׳ בשד׳ צריפין 33 (06–07/2026, ₪23,725–23,986/מ״ר → ~3.47M לשטח שלנו)",
+    "seed_version": "2026-10-31",
+    "base_value_nis": 3471000,
+    "base_label": "2 עסקאות 6 חד׳, שד׳ צריפין 33 (153 מ״ר, 06–07/2026): ממוצע ₪23,855/מ״ר × 145.5 מ״ר",
     "adjustments": [
       {
         "key": "floor",
-        "label": "קומה 2 מתוך 13",
-        "pct": -4,
-        "reason": "קומות נמוכות (בלי נוף) נמכרות בהנחה מול גבוהות — הערכה, לא נתון נמדד"
-      },
-      {
-        "key": "size",
-        "label": "דירה גדולה (145 מ״ר)",
-        "pct": -2,
-        "reason": "₪/מ״ר יורד עם גודל הדירה; ממוצע השכונה כולל דירות קטנות — הערכה"
-      },
-      {
-        "key": "balcony",
-        "label": "מרפסת 13 מ״ר",
-        "pct": 1,
-        "reason": "שטח חוץ שימושי"
-      },
-      {
-        "key": "delivery",
-        "label": "מסירה עתידית",
-        "pct": -2,
-        "reason": "אי-נזילות וסיכון עד מסירה (~09/2028)"
+        "label": "קומה 2 מול קומות 7–11 בעסקאות",
+        "pct": -3,
+        "reason": "באותו בניין קומה 7 מול 11: ~0.3% לקומה → ~-2%; עוד -1% זהירות כי מודעה בקומה 1 נמוכה (₪19.9K/מ״ר)"
       }
     ],
-    "_removed_adjustments": "new_build (+3%) — כפל ספירה: הבסיס כבר מבנייה חדשה בנוריות. boundary (-2%) — הבסיס כבר לא מ-Nadlan/מרום ראשון.",
+    "_removed_adjustments": "2026-10-31: size (-2%) — כפל ספירה: הבסיס עכשיו מדירות 153 מ״ר, גדולות משלנו. delivery (-2%) — לא רלוונטי: אי אפשר למכור לפני 2028, אז במכירה הדירה כבר מסורה. balcony (+1%) — גם בדירות ההשוואה יש מרפסות; אין נתון להבדל. קודם: new_build (+3%) ו-boundary (-2%) — כפל ספירה.",
     "scenarios": [
       {
         "key": "conservative",
