@@ -1,11 +1,12 @@
 {
-  "last_attempt": "2026-10-30T11:40:44.831406+00:00",
-  "last_attempt_ok": true,
+  "last_attempt": "2026-11-02T10:59:40.454237+00:00",
+  "last_attempt_ok": false,
   "last_success": "2026-10-30T11:40:44.831406+00:00",
   "sources_ok": {
     "nadlan": true,
     "madlan": false,
     "yad2": false,
     "nadlan_narkisim": true
-  }
+  },
+  "last_error": "⚠️  משיכת נתוני Nadlan נכשלה: HTTP Error 403: Forbidden"
 }
