@@ -1010,7 +1010,9 @@ function addRoomRow(table,d){ d=d||{};
   // Plan correction (2026-10-31): parents' bath is 168/178, not 148/178. Fix only that untouched seed row
   // so boards saved earlier pick it up without losing other edits.
   (saved||[]).forEach(d=>{ if(d && /148\/178/.test(d.room||"") && parseFloat(d.len)===1.48){
-    d.room=d.room.replace("148/178","168/178"); d.len=1.68; } });
+    d.room=d.room.replace("148/178","168/178"); d.len=1.68; }
+    // 2026-11-02: "א. שרות" is a service room, not a balcony.
+    if(d && d.room==="מרפסת שירות") d.room="חדר שירות (170/165)"; });
   if(saved && saved.length) saved.forEach(d=>addRoomRow(t,d));
   else (DATA.rooms_seed||[]).forEach(d=>addRoomRow(t, typeof d==="string"?{room:d}:d));
   document.getElementById("add-room").addEventListener("click",()=>{addRoomRow(t,{});});
@@ -1085,7 +1087,7 @@ function addRoomRow(table,d){ d=d||{};
       metric("מכירה מותרת לפי החוזה",CTX.contract_sale_from||"—","7 שנים מהזכייה ("+(CTX.lottery_year||"—")+")")+
       metric("טופס 4 (משוער)",form4,"עדכנו לתאריך בפועל כשיגיע")+
       metric("מכירה בלי מס שבח",ym(dB),hold+" חודשים מטופס 4 (דירה יחידה)")+
-      metric("חלון דירה חלופית",(UF.two_homes_window_months||18)+" חודשים","למכור את הישנה אחרי קניית החדשה — לאמת (18/24)");
+      metric("חלון דירה חלופית",(UF.two_homes_window_months||18)+" חודשים","למכור את הישנה אחרי קניית החדשה");
     const rows=[["מחיר מכירה","price"],["תיווך (+מע\"מ)","broker",-1],["עו\"ד (+מע\"מ)","lawyer",-1],["הוצאות נוספות","other",-1],
       ["עלות הדירה (חוזה + הצמדה)","cost",0],["תיאום אינפלציה (פטור)","inflAdj",0],["השבחות לניכוי","impr",0],["שבח ריאלי","realGain",0],
       ["מס שבח","tax",-1],["יתרת משכנתא לסילוק",null,-1],["💵 נשאר ביד","net"],["📈 רווח נקי מעל מה ששילמתם","profit"]];
