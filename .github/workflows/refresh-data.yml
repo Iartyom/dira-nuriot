@@ -31,7 +31,8 @@ jobs:
         run: pip install -r requirements-dev.txt
 
       - name: Refresh data and rebuild dashboard
-        run: python dira-nuriot/update_all.py
+        # Market data is fetched on the home PC (Nadlan 403s GitHub runners) — see dira-nuriot/refresh_market.cmd.
+        run: python dira-nuriot/update_all.py --skip-market
 
       - name: Commit refreshed dashboard
         run: |

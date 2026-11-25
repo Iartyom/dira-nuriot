@@ -1,6 +1,6 @@
 {
   "query": "נוריות ראשון לציון",
-  "fetched_at": "2026-10-30",
+  "fetched_at": "2026-11-25",
   "source": "nadlan.gov.il + GovMap (public unattended endpoints)",
   "source_url": "https://data.nadlan.gov.il/api/pages/neighborhood/buy/65209940.json",
   "location": {

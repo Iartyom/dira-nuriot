@@ -87,6 +87,9 @@ export/import JSON backup is the way to move data between devices.
 ## CI / publishing
 
 - `.github/workflows/ci.yml` runs `pytest -q` on push/PR to main/master.
-- `.github/workflows/refresh-data.yml` runs `update_all.py` weekly (Mon 06:15 IL) and on manual
+- Market data is fetched on the home PC, not CI (Nadlan 403s GitHub runners): scheduled task
+  `DiraMarketRefresh` runs `dira-nuriot/refresh_market.cmd` (`update_all.py --market-only`), commits
+  `market_latest.json`/`market_status.json` and triggers the workflow below. CI warns if that data is >10 days old.
+- `.github/workflows/refresh-data.yml` runs `update_all.py --skip-market` weekly (Mon 06:15 IL) and on manual
   dispatch, committing a refreshed `index.html`.
 - GitHub Pages deploys from `main` at repo root; root `index.html` redirects to `dira-nuriot/`.

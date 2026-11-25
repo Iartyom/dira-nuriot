@@ -105,10 +105,30 @@ def write_market_files(fetch_stage, now):
     return status
 
 
+def market_only(now):
+    """--market-only: fetch + persist market_latest/market_status, nothing else.
+
+    Run from an Israeli residential IP (refresh_market.cmd on the home PC): Nadlan answers 403
+    to GitHub runners, so CI no longer fetches market data and only commits these two files'
+    consumers (index.html). Exit 1 when the fetch failed so the caller skips the commit.
+    """
+    fetch_stage = run_stage("fetch", [sys.executable, "fetch_deals.py"])
+    write_market_files(fetch_stage, now)
+    print(("✅" if fetch_stage.get("ok") else "❌") + f" fetch ({fetch_stage.get('duration_seconds', 0)}s)")
+    if not fetch_stage.get("ok"):
+        print((fetch_stage.get("stderr") or fetch_stage.get("stdout"))[-500:])
+    return 0 if fetch_stage.get("ok") else 1
+
+
 def main():
     os.makedirs(UPDATES, exist_ok=True)
     now = datetime.datetime.now(datetime.timezone.utc)
     stamp = now.strftime("%Y%m%dT%H%M%SZ")
+    if "--market-only" in sys.argv:
+        raise SystemExit(market_only(now))
+    # --skip-market (CI): GitHub runners get 403 from Nadlan, so a CI fetch only ever overwrote
+    # market_status.json with "failed" and hid the home PC's good fetch. CI keeps index + rebuild.
+    skip_market = "--skip-market" in sys.argv
 
     # Market fetch is best-effort: Nadlan/Madlan return 403 to datacenter IPs (GitHub runners)
     # and GovMap's TLS is flaky. A failed fetch must not fail the workflow; instead it is recorded
@@ -116,10 +136,16 @@ def main():
     # so the page can say "last good data from X" rather than silently looking fresh.
     # Construction-inputs index (CBS API) is independent and best-effort too.
     index_stage = run_stage("index", [sys.executable, "fetch_index.py"])
-    fetch_stage = run_stage("fetch", [sys.executable, "fetch_deals.py"])
-    stages = [index_stage, fetch_stage]
-    fetch_ok = fetch_stage.get("ok")
-    market_status = write_market_files(fetch_stage, now)
+    if skip_market:
+        fetch_stage = {"name": "fetch", "ok": True, "skipped": True, "duration_seconds": 0}
+        stages = [index_stage]
+        fetch_ok = False  # no fresh deals file -> no snapshot this run
+    else:
+        fetch_stage = run_stage("fetch", [sys.executable, "fetch_deals.py"])
+        stages = [index_stage, fetch_stage]
+        fetch_ok = fetch_stage.get("ok")
+        write_market_files(fetch_stage, now)
+    market_status = _load(MARKET_STATUS_PATH, {})
     stages.append(run_stage("validate", [sys.executable, "validate_data.py", "--strict"]))
     if fetch_ok:
         stages.append({"name": "snapshot", "duration_seconds": 0, **snapshot(stamp)})
@@ -157,7 +183,16 @@ def main():
             print(stage["stdout"])
         if stage.get("stderr"):
             print(stage["stderr"], file=sys.stderr)
-    if not fetch_ok:
+    if skip_market:
+        # The home PC is the only fetcher now; warn in CI when it has gone quiet (PC off, task broken).
+        last = market_status.get("last_success")
+        age = (now - datetime.datetime.fromisoformat(last)).days if last else None
+        if age is None or age > 10:
+            msg = f"נתוני השוק לא רועננו {age if age is not None else '?'} ימים — בדקו את המשימה המתוזמנת DiraMarketRefresh במחשב הבית."
+            print("⚠️  " + msg, file=sys.stderr)
+            if os.environ.get("GITHUB_ACTIONS"):
+                print(f"::warning title=Market data stale::{msg}")
+    elif not fetch_ok:
         msg = (f"שאיבת נתוני השוק נכשלה ({market_status.get('last_error', '')}) — "
                f"הלוח נבנה מנתוני השוק האחרונים שנשמרו ({market_status.get('last_success') or 'אין'}).")
         print("⚠️  " + msg, file=sys.stderr)
