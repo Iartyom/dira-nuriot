@@ -1975,9 +1975,17 @@ def main():
         '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap">\n'
         '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ctext y=\'.9em\' font-size=\'90\'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">\n'
+        # Installable phone app (PWA): manifest + icons + offline service worker (sw.js next to index.html).
+        '<link rel="manifest" href="manifest.webmanifest">\n'
+        '<link rel="apple-touch-icon" href="assets/icon-180.png">\n'
+        '<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n'
+        '<meta name="apple-mobile-web-app-title" content="הדירה">\n'
         '<title>לוח הדירה — נוריות</title>\n<style>' + CSS + '</style>\n</head>\n<body>\n'
         '<div class="wrap">' + body + '</div>\n'
         '<script>\nconst DATA = ' + json.dumps(payload, ensure_ascii=False) + ';\n' + JS + '\n</script>\n'
+        # Register after load so the service worker never competes with first paint; file:// opens skip it.
+        '<script>if ("serviceWorker" in navigator && location.protocol.startsWith("http")) '
+        'addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));</script>\n'
         '</body>\n</html>'
     )
 
