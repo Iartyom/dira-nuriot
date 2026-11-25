@@ -534,7 +534,11 @@ function recalcPayments(){
     nb.style.display="block";
     nb.innerHTML='⏭️ התשלום הבא: <b>'+nextEl.dataset.date+'</b> · '+nis(nextEff)+
       (openGap?' <span style="font-size:13px;color:var(--gold)">(+ עד '+nis(openGap)+' הצמדה פתוחה מתשלומים קודמים, אם תיגבה)</span>':'');
-    if(hnp) hnp.textContent=nis(nextEff); if(hnps) hnps.textContent=nextEl.dataset.date; }
+    if(hnp) hnp.textContent=nis(nextEff); if(hnps) hnps.textContent=nextEl.dataset.date;
+    if(nextEl.dataset.date < new Date().toISOString().slice(0,10)){
+      const w='⚠️ המועד עבר — שולם? סמנו ✓ בלוח התשלומים';
+      if(hnps){ hnps.textContent=nextEl.dataset.date+' · '+w; hnps.style.color="var(--gold)"; }
+      nb.innerHTML='<span style="color:var(--gold)">'+w+'</span><br>'+nb.innerHTML; } }
   else { nb.style.display="none"; if(hnp) hnp.textContent="הושלם"; if(hnps) hnps.textContent="כל התשלומים שולמו"; }
   if(window.renderSale) window.renderSale();
 }
@@ -1151,16 +1155,16 @@ const ca=document.getElementById("collapse-all"); if(ca) ca.addEventListener("cl
 // ---------- טאבים ראשיים (6 תחומים) ----------
 // כל סקשן משויך לתחום לפי כותרת; הסקשנים מועברים לפאנל התחום בסדר הרצוי.
 const DOMAINS=[
-  {key:"overview", label:"סקירה", match:["#value-summary","משימות לביצוע"]},
+  // Overview = what is actionable during construction; the renovation checklist only matters after the key (~2028).
+  {key:"overview", label:"סקירה", match:["#action-card"]},
   {key:"finance", label:"כספים", match:["לוח תשלומים","הערכת שווי","מכירה ושדרוג"]},
-  {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","רעיונות עיצוב לפי חדר","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה"]},
+  {key:"renovation", label:"שיפוץ", match:["מה כלול מהקבלן","אפשרויות שיפוץ","משימות לביצוע","רעיונות עיצוב לפי חדר","תקציב שיפוץ בפועל","תוכנית ביצוע מהירה"]},
   {key:"handover", label:"מסירה", match:["מסירה ובדק בית"]},
   {key:"property", label:"נכס וסביבה", match:["מיקום, תוכניות","מידות חדרים","סקירת שכונה"]},
   {key:"system", label:"מערכת", match:["מצב מערכת"]},
 ];
 (function(){
   const wrap=document.querySelector(".wrap"), footer=wrap.querySelector("footer");
-  const valueGrid=document.getElementById("value-summary");
   function findEl(token){
     if(token[0]==="#") return document.getElementById(token.slice(1));
     return sections.find(s=>{ const h=s.querySelector("h2"); return h && h.textContent.includes(token); });
@@ -1494,8 +1498,8 @@ def main():
     </div>
   </section>"""
     action_card = f"""
-    <div class="card" style="margin-top:12px">
-      <h3>📋 כללי (לא שיפוץ)</h3>
+    <div class="card" id="action-card" style="margin-top:12px">
+      <h3>📋 משימות עכשיו (לא שיפוץ)</h3>
       <ul class="flat" data-elist="action">{action_html}</ul>
       <div class="add-row">
         <input class="cell elist-input" data-elist="action" placeholder="הוסיפו פריט משלכם…">
@@ -1721,11 +1725,6 @@ def main():
     </div>
   </section>
 
-  <div class="grid" id="value-summary">
-    <div class="card"><h3>מחיר רכישה</h3><div class="big">{shekel(paid_price)}</div><div class="sub">חוזה {pur.get('contract_signed','')} · ~{pur.get('price_per_sqm_paid','—'):,} ₪/מ"ר · מטבח לא כלול</div></div>
-    <div class="card"><h3>שווי שוק מוערך</h3><div class="big">{shekel(est)}</div><div class="sub">טווח {shekel(val.get('estimated_value_low_nis'))}–{shekel(val.get('estimated_value_high_nis'))} · ביטחון {val.get('confidence','—')}</div></div>
-    <div class="card"><h3>רווח על הנייר</h3><div class="big" style="color:{equity_color}">+{shekel(equity)} <span style="font-size:15px">(+{equity_pct}%)</span></div><div class="sub">מול המחיר ששולם · עודכן {val.get('last_updated','')}</div></div>
-  </div>
 
   <section>
     <h2>💳 לוח תשלומים (חוזה)</h2>
