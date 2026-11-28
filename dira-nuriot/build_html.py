@@ -452,7 +452,7 @@ function recompute(){
 // ---------- תשלומים ----------
 // Linkage model: each indexed payment uses the index *known* on its due date (CBS publishes
 // month M on the 15th of M+1); future payments use the latest published index (projection) or
-// the manual override. Only `share` (40%, Sale Law amendment 2022) of each payment is linked,
+// the manual override. Only `share` (50% per contract annex C §7.4) of each payment is linked,
 // and a falling index never reduces the amount below the contract base.
 const IDX = DATA.index || {series:{}};
 function knownIndexMonth(dateStr){
@@ -519,6 +519,11 @@ function recalcPayments(){
       if(!nextEl){ nextEl=c; nextEff=info.eff; } }
   });
   document.getElementById("paid-total").textContent=nis(paid);
+  // Paid rows without a ticked guarantee = money not yet protected under the Sale Law.
+  let guarMiss=0; document.querySelectorAll(".paychk").forEach(c=>{ if(!c.checked) return;
+    const g=document.querySelector('.guarchk[data-date="'+c.dataset.date+'"]'); if(g&&!g.checked) guarMiss++; });
+  const gm=document.getElementById("guar-missing");
+  if(gm){ gm.textContent=guarMiss?guarMiss+" תשלומים ⚠️":"0 ✓"; gm.style.color=guarMiss?"var(--gold)":""; }
   const ol=document.getElementById("open-linkage-total"); if(ol) ol.textContent=nis(openGap);
   // Remaining = unpaid base + their linkage + linkage still open on paid rows (may be billed later).
   document.getElementById("remaining-total").textContent=nis(remBase+remLink+openGap);
@@ -544,6 +549,11 @@ function recalcPayments(){
 }
 document.querySelectorAll(".paychk").forEach(c=>{
   const k="paid_"+c.dataset.date;
+  if(state[k]!==undefined) c.checked=state[k];
+  c.addEventListener("change",()=>{ state[k]=c.checked; save(); recalcPayments(); });
+});
+document.querySelectorAll(".guarchk").forEach(c=>{
+  const k="guar_"+c.dataset.date;
   if(state[k]!==undefined) c.checked=state[k];
   c.addEventListener("change",()=>{ state[k]=c.checked; save(); recalcPayments(); });
 });
@@ -1204,8 +1214,10 @@ window.addEventListener("beforeprint",()=>{ sections.forEach(sec=>{ const h2=sec
   [...sec.children].forEach(el=>{ if(el!==h2) el.style.display=""; }); }); });
 window.addEventListener("afterprint",()=>{ applers.forEach(a=>a&&a()); });
 // עד מסירה (KPI)
-(function(){ const el=document.getElementById("hero-handover"); if(!el||!DATA.payments||!DATA.payments.length) return;
-  const last=new Date(DATA.payments[DATA.payments.length-1].date);
+// Uses the contractual handover date (contract annex C §2); the last payment is due 7 days before it.
+(function(){ const el=document.getElementById("hero-handover"); if(!el) return;
+  const hd=DATA.handover_date||(DATA.payments&&DATA.payments.length&&DATA.payments[DATA.payments.length-1].date);
+  if(!hd) return; const last=new Date(hd);
   const days=Math.ceil((last-new Date())/(1000*60*60*24));
   el.textContent = days>0 ? days.toLocaleString("he-IL")+" ימים" : "הגיע/עבר"; })();
 
@@ -1350,7 +1362,7 @@ def main():
     for s in pay.get("schedule", []):
         idx = "🔗" if s.get("indexed") else ""
         pay_rows += (
-            f'<tr><td>{s["date"]}</td>'
+            f'<tr><td>{s["date"]}{"<br><span style=font-size:11px;color:var(--muted)>" + s["note"] + "</span>" if s.get("note") else ""}</td>'
             f'<td class="num">{shekel(s["amount_incl_vat"])} {idx}</td>'
             f'<td class="idx-cell" style="font-size:12px;color:var(--muted)">{"—" if not s.get("indexed") else ""}</td>'
             f'<td class="num amt-cell" data-base="{s["amount_incl_vat"]}"></td>'
@@ -1359,7 +1371,10 @@ def main():
             f'<td class="paid-cell"></td>'
             f'<td><input type="checkbox" class="paychk" data-date="{s["date"]}" '
             f'data-amt="{s["amount_incl_vat"]}" data-indexed="{1 if s.get("indexed") else 0}" '
-            f'{"checked" if s.get("paid") else ""}></td></tr>'
+            f'{"checked" if s.get("paid") else ""}></td>'
+            # Sale Law guarantee (contract §10.1): one per paid voucher; tracked locally per payment.
+            f'<td><input type="checkbox" class="guarchk" data-date="{s["date"]}" '
+            f'{"checked" if s.get("guarantee") else ""}></td></tr>'
         )
 
     # ----- מקורות -----
@@ -1458,6 +1473,7 @@ def main():
                ],
                "rooms_seed": apt.get("rooms_dimensions") or ["כניסה", "סלון + פינת אוכל", "מטבח"],
                "payments": pay.get("schedule", []),
+               "handover_date": pur.get("handover_date", ""),
                "sale_ctx": {"est": est, "contract_sale_from": restr.get("contract_sale_allowed_from"),
                             "lottery_year": restr.get("lottery_year")},
                "management": management,
@@ -1587,7 +1603,7 @@ def main():
     <div class="kpi"><div class="k-lbl">שווי מוערך (טווח)</div><div class="k-val">{shekel(val_low)}–{shekel(val_high)}</div><div class="k-sub"><span class="badge {confidence_badge_class}">ביטחון {val.get('confidence','—')}</span></div></div>
     <div class="kpi"><div class="k-lbl">רווח על הנייר (טווח)</div><div class="k-val" style="color:{equity_color}">{equity_range_txt}</div><div class="k-sub">≈ +{equity_pct}% · מימוש ממכירה מ-{restr.get('sale_allowed_from','~2030')}</div></div>
     <div class="kpi"><div class="k-lbl">התשלום הבא</div><div class="k-val" id="hero-nextpay">—</div><div class="k-sub" id="hero-nextpay-sub">לוח החוזה</div></div>
-    <div class="kpi"><div class="k-lbl">עד מסירה משוערת</div><div class="k-val" id="hero-handover">—</div><div class="k-sub">תשלום אחרון 30/09/28</div></div>
+    <div class="kpi"><div class="k-lbl">עד מסירה משוערת</div><div class="k-val" id="hero-handover">—</div><div class="k-sub">מסירה חוזית {pur.get('handover_date','')}</div></div>
   </div>"""
 
     # ----- תוכנית הדירה האמיתית (render מה-PDF) + מהלכי השבחה -----
@@ -1688,7 +1704,7 @@ def main():
     {photo_html}
     <div class="info">
       <h1>🏠 ניהול שיפוץ — דירת נוריות</h1>
-      <div class="meta">{u.get('rooms','')} חדרים · {u.get('area_sqm','')} מ"ר + מרפסת {u.get('balcony_sqm','')} מ"ר · {p.get('neighborhood','')}, {p.get('city','')} · פרויקט {p.get('developer','')} · מחיר למשתכן · מסירה {pur.get('expected_handover','')}</div>
+      <div class="meta">{u.get('rooms','')} חדרים · {u.get('area_sqm','')} מ"ר + מרפסת {u.get('balcony_sqm','')} מ"ר · {u.get('parking','')} · {p.get('neighborhood','')}, {p.get('city','')} · פרויקט {p.get('developer','')} · מחיר למשתכן · מסירה {pur.get('expected_handover','')}</div>
     </div>
   </header>
 {hero_html}
@@ -1731,7 +1747,7 @@ def main():
     <div class="next" id="next-payment"></div>
     <div class="card" style="margin-top:10px">
       <div class="scroll"><table>
-        <tr><th>תאריך</th><th>סכום חוזה (בסיס)</th><th>הצמדה: מדד / תוספת</th><th>סה״כ מחושב</th><th>שולם בפועל</th><th>סטטוס</th><th>שולם?</th></tr>
+        <tr><th>תאריך</th><th>סכום חוזה (בסיס)</th><th>הצמדה: מדד / תוספת</th><th>סה״כ מחושב</th><th>שולם בפועל</th><th>סטטוס</th><th>שולם?</th><th>ערבות התקבלה?</th></tr>
         {pay_rows}
       </table></div>
       <div class="sub" style="margin-top:8px">🔗 = צמוד למדד תשומות הבנייה. {pay.get('index_note','')}</div>
@@ -1746,7 +1762,9 @@ def main():
       <div>שולם בפועל: <b id="paid-total">—</b></div>
       <div>הפרשי הצמדה פתוחים (על תשלומים ששולמו): <b id="open-linkage-total">—</b></div>
       <div>נותר לשלם: <b id="remaining-total">—</b> <span class="sub" id="remaining-split"></span></div>
+      <div>ערבויות חוק מכר חסרות: <b id="guar-missing">—</b></div>
     </div>
+    <div class="sub" style="margin-top:6px">🛡️ לפי סעיף 10.1 לחוזה, על כל תשלום דרך פנקס השוברים הבנק מנפיק ערבות חוק מכר (על הסכום ללא מע"מ). אם לא קיבלתם ערבות תוך זמן סביר אחרי תשלום — דרשו אותה מהבנק המלווה. אחרי ששולמו 100,000 ₪ לפחות, הבנק מנפיק מכתב החרגה מותנה תוך 30 יום (סעיף 9.2).</div>
     <div class="card" style="margin-top:12px">
       <h3>💰 תזרים ומימון עד מסירה</h3>
 

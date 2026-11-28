@@ -28,5 +28,6 @@ def test_build_embeds_linkage_model():
     build.main()
     with open(os.path.join(APP, 'index.html'), encoding='utf-8') as handle:
         html = handle.read()
-    for marker in ('payIndexInfo', '"share": 0.4', 'idx-cell', 'api.cbs.gov.il'):
+    # share 0.5 = contract annex C §7.4 (half of each payment linked); guarchk = §10.1 guarantees.
+    for marker in ('payIndexInfo', '"share": 0.5', 'idx-cell', 'guarchk', 'api.cbs.gov.il'):
         assert marker in html, marker
